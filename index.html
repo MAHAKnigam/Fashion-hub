@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion Hub - Home</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav>
+        <div class="logo">Fashion Hub</div>
+        
+        <!-- Mobile Menu Toggle -->
+        <div class="menu-toggle" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        
+        <ul id="navMenu">
+            <li><a href="index.html" class="active">Home</a></li>
+            <li><a href="collection.html">Collection</a></li>
+            <li><a href="mens.html">Men's</a></li>
+            <li><a href="womens.html">Women's</a></li>
+            <li><a href="kids.html">Kids</a></li>
+            <li id="adminLink" style="display:none;"><a href="admin.html">Admin</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="cart.html">🛒 Cart (<span id="cartCount">0</span>)</a></li>
+            <li id="loginLink"><a href="login.html">Login</a></li>
+            <li id="signupLink"><a href="signup.html">Sign Up</a></li>
+            <li id="userLink" style="display:none;"><span class="user-greeting"></span></li>
+            <li id="logoutLink" style="display:none;"><a href="#" onclick="logOut()">Logout</a></li>
+        </ul>
+    </nav>
+
+    <section id="home" class="section">
+        <div class="content">
+            <h1>Welcome to Fashion Hub</h1>
+            <p>Discover the latest trends in clothing variety.</p>
+            <button onclick="shopNow()">Shop Now</button>
+        </div>
+    </section>
+
+    <section id="collection" class="section">
+        <h2>Our Collection</h2>
+        <p>Explore our wide range of fashion categories</p>
+        <div class="cards">
+
+            <div class="card">
+                <img src="https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400" alt="Men's Wear">
+                <div class="card-content">
+                    <h3>Men's Wear</h3>
+                    <p>Stylish & Comfortable outfits for the modern man.</p>
+                    <a href="mens.html"><button>View More</button></a>
+                </div>
+            </div>
+
+            <div class="card">
+                <img src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400" alt="Women's Wear">
+                <div class="card-content">
+                    <h3>Women's Wear</h3>
+                    <p>Trendy & Elegant collection for every occasion.</p>
+                    <a href="womens.html"><button>View More</button></a>
+                </div>
+            </div>
+
+            <div class="card">
+                <img src="https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=400" alt="Kids Wear">
+                <div class="card-content">
+                    <h3>Kids Wear</h3>
+                    <p>Colorful & Cute styles for your little ones.</p>
+                    <a href="kids.html"><button>View More</button></a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Featured Products Section -->
+    <section id="featured" class="section">
+        <h2>Featured Products</h2>
+        <p>Check out our most popular items</p>
+        <div class="cards" id="featuredProducts">
+            <!-- Featured products will be loaded here -->
+        </div>
+    </section>
+
+    <!-- Why Choose Us Section -->
+    <section id="features" class="section" style="background: linear-gradient(180deg, #f0f0f0 0%, #fafafa 100%);">
+        <h2>Why Choose Fashion Hub?</h2>
+        <div class="cards">
+            <div class="card">
+                <div class="card-content">
+                    <h3>🚚 Free Shipping</h3>
+                    <p>On orders over $50</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-content">
+                    <h3>↩️ Easy Returns</h3>
+                    <p>30-day return policy</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-content">
+                    <h3>💬 24/7 Support</h3>
+                    <p>Chat with Mavi anytime</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-content">
+                    <h3>⭐ Quality</h3>
+                    <p>Premium materials</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="section">
+        <h2>Contact Us</h2>
+        <p>Have questions? We'd love to hear from you!</p>
+        <form onsubmit="return submitForm()">
+            <input type="text" placeholder="Your Name" required>
+            <input type="email" placeholder="Your Email" required>
+            <textarea placeholder="Your Message"></textarea>
+            <button type="submit">Send Message</button>
+        </form>
+    </section>
+
+    <!-- Mavi Chatbot -->
+    <div class="chatbot-toggle" onclick="toggleChatbot()">
+        <span class="chatbot-icon">💬</span>
+        <span class="chatbot-badge">Mavi</span>
+    </div>
+    
+    <div class="chatbot-container" id="chatbot">
+        <div class="chatbot-header">
+            <div class="chatbot-title">
+                <span class="chatbot-avatar">👗</span>
+                <span>Mavi - Your Fashion Assistant</span>
+            </div>
+            <button class="chatbot-close" onclick="toggleChatbot()">✕</button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="chatbot-message bot-message">
+                <div class="message-content">
+                    <p>👋 Hi there! I'm <strong>Mavi</strong>, your personal fashion assistant at Fashion Hub!</p>
+                    <p>I can help you with:</p>
+                    <ul>
+                        <li>🛍️ Finding products</li>
+                        <li>📦 Order information</li>
+                        <li>📍 Navigation help</li>
+                        <li>💡 Style suggestions</li>
+                    </ul>
+                    <p>Just type your question below! 😊</p>
+                </div>
+            </div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatbotInput" placeholder="Ask Mavi anything..." onkeypress="handleChatKeyPress(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Fashion Hub</h3>
+                <p>Your one-stop destination for trendy fashion. We bring you the latest styles in clothing for men, women, and kids.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <a href="index.html">Home</a>
+                <a href="collection.html">Collection</a>
+                <a href="mens.html">Men's</a>
+                <a href="womens.html">Women's</a>
+                <a href="kids.html">Kids</a>
+            </div>
+            <div class="footer-section">
+                <h3>Contact Info</h3>
+                <p>Email: info@fashionhub.com</p>
+                <p>Phone: +1 234 567 890</p>
+                <p>Address: 123 Fashion Street, NY</p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <div class="social-links">
+                    <a href="#" title="Facebook">📘</a>
+                    <a href="#" title="Instagram">📷</a>
+                    <a href="#" title="Twitter">🐦</a>
+                    <a href="#" title="Pinterest">📌</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Fashion Hub. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <style>
+        /* Chatbot Styles */
+        .chatbot-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #ff4d6d 0%, #ff8a80 100%);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(255, 77, 109, 0.4);
+            z-index: 999;
+            transition: all 0.3s ease;
+        }
+        
+        .chatbot-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 40px rgba(255, 77, 109, 0.5);
+        }
+        
+        .chatbot-icon {
+            font-size: 28px;
+        }
+        
+        .chatbot-badge {
+            font-size: 10px;
+            color: white;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+        
+        .chatbot-container {
+            position: fixed;
+            bottom: 120px;
+            right: 30px;
+            width: 380px;
+            height: 500px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .chatbot-container.active {
+            display: flex;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .chatbot-header {
+            background: linear-gradient(135deg, #ff4d6d 0%, #ff8a80 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chatbot-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+        
+        .chatbot-avatar {
+            font-size: 24px;
+        }
+        
+        .chatbot-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        .chatbot-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f9f9f9;
+        }
+        
+        .chatbot-message {
+            margin-bottom: 15px;
+            display: flex;
+        }
+        
+        .bot-message {
+            justify-content: flex-start;
+        }
+        
+        .user-message {
+            justify-content: flex-end;
+        }
+        
+        .message-content {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .bot-message .message-content {
+            background: white;
+            border: 1px solid #eee;
+            border-bottom-left-radius: 2px;
+        }
+        
+        .user-message .message-content {
+            background: linear-gradient(135deg, #ff4d6d 0%, #ff8a80 100%);
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+        
+        .message-content ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .message-content li {
+            margin: 5px 0;
+        }
+        
+        .chatbot-input {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chatbot-input input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #eee;
+            border-radius: 25px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .chatbot-input input:focus {
+            border-color: #ff4d6d;
+        }
+        
+        .chatbot-input button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #ff4d6d 0%, #ff8a80 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .chatbot-input button:hover {
+            transform: scale(1.05);
+        }
+        
+        @media(max-width: 768px) {
+            .chatbot-container {
+                width: calc(100% - 40px);
+                right: 20px;
+                bottom: 100px;
+                height: 400px;
+            }
+            
+            .chatbot-toggle {
+                width: 60px;
+                height: 60px;
+            }
+        }
+    </style>
+
+    <script src="script.js"></script>
+    <script>
+        // Chatbot functionality
+        function toggleChatbot() {
+            const chatbot = document.getElementById('chatbot');
+            chatbot.classList.toggle('active');
+        }
+        
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('chatbotInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                addUserMessage(message);
+                input.value = '';
+                
+                // Get bot response after a short delay
+                setTimeout(() => {
+                    const response = getBotResponse(message);
+                    addBotMessage(response);
+                }, 500);
+            }
+        }
+        
+        function addUserMessage(message) {
+            const messagesDiv = document.getElementById('chatbotMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chatbot-message user-message';
+            messageDiv.innerHTML = `<div class="message-content"><p>${message}</p></div>`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function addBotMessage(response) {
+            const messagesDiv = document.getElementById('chatbotMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chatbot-message bot-message';
+            messageDiv.innerHTML = `<div class="message-content">${response}</div>`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function getBotResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Greetings
+            if (lowerMessage.includes('hi') || lowerMessage.includes('hello') || lowerMessage.includes('hey') || lowerMessage.includes('greetings')) {
+                return `<p>👋 Hello! Welcome to Fashion Hub!</p>
+                        <p>I'm <strong>Mavi</strong>, your personal shopping assistant. How can I help you today?</p>`;
+            }
+            
+            // Help with navigation
+            if (lowerMessage.includes('men') || lowerMessage.includes('mens') || lowerMessage.includes('man') || lowerMessage.includes('boys')) {
+                return `<p>👔 For men's fashion, check out our Men's Collection!</p>
+                        <p>We have:</p>
+                        <ul>
+                            <li>👕 Shirts - Casual & Formal</li>
+                            <li>👖 Pants - Jeans, Dress Pants & Shorts</li>
+                            <li>🧥 Jackets - Blazers, Hoodies & More</li>
+                            <li>👟 Shoes - Dress & Athletic</li>
+                            <li>⌚ Accessories - Belts, Watches & Sunglasses</li>
+                        </ul>
+                        <p><a href="mens.html" style="color: #ff4d6d;">Click here to visit Men's Collection</a></p>`;
+            }
+            
+            if (lowerMessage.includes('women') || lowerMessage.includes('womens') || lowerMessage.includes('girl') || lowerMessage.includes('ladies')) {
+                return `<p>👗 For women's fashion, check out our Women's Collection!</p>
+                        <p>We have:</p>
+                        <ul>
+                            <li>👗 Dresses - Summer, Evening & Party</li>
+                            <li>👚 Tops - Blouses, T-Shirts & Crop Tops</li>
+                            <li>👖 Pants - Jeans, Leggings & Palazzo</li>
+                            <li>👠 Shoes - Heels, Flats & Boots</li>
+                            <li>👜 Accessories - Handbags, Necklaces & Scarves</li>
+                        </ul>
+                        <p><a href="womens.html" style="color: #ff4d6d;">Click here to visit Women's Collection</a></p>`;
+            }
+            
+            if (lowerMessage.includes('kid') || lowerMessage.includes('kids') || lowerMessage.includes('child') || lowerMessage.includes('baby')) {
+                return `<p>🧒 For kids' fashion, check out our Kids Collection!</p>
+                        <p>We have:</p>
+                        <ul>
+                            <li>👕 Boys - T-Shirts, Jeans, Polo Shirts</li>
+                            <li>👗 Girls - Dresses, Leggings, Skirts</li>
+                            <li>👟 Kids Shoes - Sneakers & Sandals</li>
+                            <li>🧢 Accessories - Caps & Jackets</li>
+                        </ul>
+                        <p><a href="kids.html" style="color: #ff4d6d;">Click here to visit Kids Collection</a></p>`;
+            }
+            
+            // Collection/All products
+            if (lowerMessage.includes('collection') || lowerMessage.includes('all products') || lowerMessage.includes('products') || lowerMessage.includes('shop')) {
+                return `<p>🛍️ Browse our complete collection!</p>
+                        <p>We have amazing products for Men, Women, and Kids.</p>
+                        <p><a href="collection.html" style="color: #ff4d6d;">Click here to see all products</a></p>`;
+            }
+            
+            // Cart
+            if (lowerMessage.includes('cart') || lowerMessage.includes('buy') || lowerMessage.includes('purchase') || lowerMessage.includes('add to cart')) {
+                return `<p>🛒 To add items to your cart:</p>
+                        <ol>
+                            <li>Browse our collection</li>
+                            <li>Click on any product you like</li>
+                            <li>Click "Add to Cart" button</li>
+                            <li>View your cart anytime from the navigation</li>
+                        </ol>
+                        <p><a href="collection.html" style="color: #ff4d6d;">Start Shopping Now!</a></p>`;
+            }
+            
+            // Login/Signup
+            if (lowerMessage.includes('login') || lowerMessage.includes('sign in') || lowerMessage.includes('register') || lowerMessage.includes('signup') || lowerMessage.includes('account')) {
+                return `<p>🔐 To create an account or login:</p>
+                        <ol>
+                            <li>Click on "Login" or "Sign Up" in the navigation</li>
+                            <li>Fill in your details</li>
+                            <li>Start shopping!</li>
+                        </ol>
+                        <p>Already have an account? <a href="login.html" style="color: #ff4d6d;">Login here</a></p>
+                        <p>New user? <a href="signup.html" style="color: #ff4d6d;">Sign up here</a></p>`;
+            }
+            
+            // Pricing
+            if (lowerMessage.includes('price') || lowerMessage.includes('cost') || lowerMessage.includes('cheap') || lowerMessage.includes('expensive') || lowerMessage.includes('affordable')) {
+                return `<p>💰 Our prices are very competitive!</p>
+                        <p>Product ranges:</p>
+                        <ul>
+                            <li>Men's: $24.99 - $199.99</li>
+                            <li>Women's: $24.99 - $199.99</li>
+                            <li>Kids: $14.99 - $59.99</li>
+                        </ul>
+                        <p><a href="collection.html" style="color: #ff4d6d;">Browse all products</a></p>`;
+            }
+            
+            // Shipping
+            if (lowerMessage.includes('shipping') || lowerMessage.includes('delivery') || lowerMessage.includes('deliver') || lowerMessage.includes('send')) {
+                return `<p>🚚 We offer free shipping on orders over $50!</p>
+                        <p>Standard delivery: 5-7 business days</p>
+                        <p>Express delivery: 2-3 business days (extra charges apply)</p>`;
+            }
+            
+            // Returns
+            if (lowerMessage.includes('return') || lowerMessage.includes('refund') || lowerMessage.includes('exchange')) {
+                return `<p>↩️ Easy Returns Policy:</p>
+                        <ul>
+                            <li>30-day return policy</li>
+                            <li>Items must be unworn with tags</li>
+                            <li>Free return shipping on defective items</li>
+                        </ul>
+                        <p>Contact our support for return assistance!</p>`;
+            }
+            
+            // Contact
+            if (lowerMessage.includes('contact') || lowerMessage.includes('support') || lowerMessage.includes('help') || lowerMessage.includes('phone') || lowerMessage.includes('email')) {
+                return `<p>📞 Contact Us:</p>
+                        <ul>
+                            <li>Email: info@fashionhub.com</li>
+                            <li>Phone: +1 234 567 890</li>
+                            <li>Address: 123 Fashion Street, NY</li>
+                        </ul>
+                        <p>Or scroll down to use our contact form!</p>`;
+            }
+            
+            // Thank you
+            if (lowerMessage.includes('thank') || lowerMessage.includes('thanks')) {
+                return `<p>😊 You're welcome! Happy to help!</p>
+                        <p>Is there anything else I can assist you with?</p>`;
+            }
+            
+            // Goodbye
+            if (lowerMessage.includes('bye') || lowerMessage.includes('goodbye') || lowerMessage.includes('see you')) {
+                return `<p>👋 Goodbye! Thank you for visiting Fashion Hub!</p>
+                        <p>Hope to see you again soon! Shop smart with Mavi! 🛍️</p>`;
+            }
+            
+            // Default response
+            return `<p>🤔 I'm not sure I understood that. Let me help you with some common questions:</p>
+                    <ul>
+                        <li><strong>Products:</strong> Ask about "men's", "women's", or "kids" clothing</li>
+                        <li><strong>Shopping:</strong> Ask about "cart" or "how to buy"</li>
+                        <li><strong>Account:</strong> Ask about "login" or "signup"</li>
+                        <li><strong>Shipping:</strong> Ask about "shipping" or "delivery"</li>
+                        <li><strong>Returns:</strong> Ask about "returns" or "refunds"</li>
+                    </ul>
+                    <p>Or <a href="collection.html" style="color: #ff4d6d;">click here to browse all products!</a></p>`;
+        }
+        
+        // Load featured products on home page
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeProducts();
+            updateCartCount();
+            updateNavigation();
+            
+            // Load featured products (first 4 products)
+            const products = getProducts().slice(0, 4);
+            const container = document.getElementById('featuredProducts');
+            
+            if (container && products.length > 0) {
+                container.innerHTML = products.map(product => `
+                    <div class="card">
+                        <img src="${product.image}" alt="${product.name}" onerror="this.src='https://via.placeholder.com/300x250?text=No+Image'">
+                        <div class="card-content">
+                            <h3>${product.name}</h3>
+                            <p>${product.description.substring(0, 60)}...</p>
+                            <p class="price">$${parseFloat(product.price).toFixed(2)}</p>
+                            <button onclick="addToCart('${product.name}')">Add to Cart</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        });
+        
+        // Make functions globally available
+        window.toggleChatbot = toggleChatbot;
+        window.sendMessage = sendMessage;
+        window.handleChatKeyPress = handleChatKeyPress;
+    </script>
+</body>
+</html>

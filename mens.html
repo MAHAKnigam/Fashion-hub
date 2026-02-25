@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion Hub - Men's Collection</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav>
+        <div class="logo">Fashion Hub</div>
+        
+        <div class="menu-toggle" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        
+        <ul id="navMenu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="collection.html">Collection</a></li>
+            <li><a href="mens.html" class="active">Men's</a></li>
+            <li><a href="womens.html">Women's</a></li>
+            <li><a href="kids.html">Kids</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="cart.html">🛒 Cart (<span id="cartCount">0</span>)</a></li>
+            <li id="loginLink"><a href="login.html">Login</a></li>
+            <li id="signupLink"><a href="signup.html">Sign Up</a></li>
+            <li id="userLink" style="display:none;"><span class="user-greeting"></span></li>
+            <li id="logoutLink" style="display:none;"><a href="#" onclick="logOut()">Logout</a></li>
+        </ul>
+    </nav>
+
+    <section class="section">
+        <h1>Men's Collection</h1>
+        <p>Explore our stylish men's fashion</p>
+        
+        <div class="filter-bar">
+            <label for="subCategoryFilter">Filter by:</label>
+            <select id="subCategoryFilter" onchange="filterMenBySubCategory(this.value)">
+                <option value="all">All Categories</option>
+                <option value="Shirts">Shirts</option>
+                <option value="Pants">Pants</option>
+                <option value="Jackets">Jackets</option>
+                <option value="Shoes">Shoes</option>
+                <option value="Accessories">Accessories</option>
+            </select>
+        </div>
+        
+        <div class="cards" id="productCards">
+            <!-- Products will be loaded here dynamically -->
+        </div>
+    </section>
+
+    <section id="contact" class="section">
+        <h2>Contact Us</h2>
+        <form onsubmit="return submitForm()">
+            <input type="text" placeholder="Your Name" required>
+            <input type="email" placeholder="Your Email" required>
+            <textarea placeholder="Your Message"></textarea>
+            <button type="submit">Send Message</button>
+        </form>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Fashion Hub. All Rights Reserved.</p>
+    </footer>
+
+    <!-- Mavi Chatbot -->
+    <div class="chatbot-toggle" onclick="toggleChatbot()">
+        <span class="chatbot-icon">💬</span>
+        <span class="chatbot-badge">Mavi</span>
+    </div>
+    
+    <div class="chatbot-container" id="chatbot">
+        <div class="chatbot-header">
+            <div class="chatbot-title">
+                <span class="chatbot-avatar">👗</span>
+                <span>Mavi - Your Fashion Assistant</span>
+            </div>
+            <button class="chatbot-close" onclick="toggleChatbot()">✕</button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="chatbot-message bot-message">
+                <div class="message-content">
+                    <p>👋 Hi! I'm <strong>Mavi</strong>, your fashion assistant!</p>
+                    <p>Need help? Just ask about products, sizes, or navigation!</p>
+                </div>
+            </div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatbotInput" placeholder="Ask Mavi anything..." onkeypress="handleChatKeyPress(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <style>
+        .chatbot-toggle { position: fixed; bottom: 30px; right: 30px; width: 70px; height: 70px; background: linear-gradient(135deg, #ff4d6d, #ff8a80); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 30px rgba(255,77,109,0.4); z-index: 999; }
+        .chatbot-toggle:hover { transform: scale(1.1); }
+        .chatbot-icon { font-size: 28px; }
+        .chatbot-badge { font-size: 10px; color: white; font-weight: bold; }
+        .chatbot-container { position: fixed; bottom: 120px; right: 30px; width: 380px; height: 500px; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); z-index: 1000; display: none; flex-direction: column; }
+        .chatbot-container.active { display: flex; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .chatbot-header { background: linear-gradient(135deg, #ff4d6d, #ff8a80); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .chatbot-title { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+        .chatbot-avatar { font-size: 24px; }
+        .chatbot-close { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+        .chatbot-messages { flex: 1; padding: 20px; overflow-y: auto; background: #f9f9f9; }
+        .chatbot-message { margin-bottom: 15px; display: flex; }
+        .bot-message { justify-content: flex-start; }
+        .user-message { justify-content: flex-end; }
+        .message-content { max-width: 80%; padding: 12px 16px; border-radius: 15px; font-size: 14px; }
+        .bot-message .message-content { background: white; border: 1px solid #eee; }
+        .user-message .message-content { background: linear-gradient(135deg, #ff4d6d, #ff8a80); color: white; }
+        .chatbot-input { padding: 15px; background: white; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        .chatbot-input input { flex: 1; padding: 12px 15px; border: 2px solid #eee; border-radius: 25px; outline: none; }
+        .chatbot-input input:focus { border-color: #ff4d6d; }
+        .chatbot-input button { padding: 12px 25px; background: linear-gradient(135deg, #ff4d6d, #ff8a80); color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: 600; }
+        @media(max-width: 768px) { .chatbot-container { width: calc(100% - 40px); right: 20px; bottom: 100px; } }
+    </style>
+
+    <script src="script.js"></script>
+    <script>
+        function toggleChatbot() { document.getElementById('chatbot').classList.toggle('active'); }
+        function handleChatKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+        function sendMessage() {
+            var input = document.getElementById('chatbotInput');
+            var message = input.value.trim();
+            if (message) {
+                var d = document.getElementById('chatbotMessages');
+                d.innerHTML += '<div class="chatbot-message user-message"><div class="message-content"><p>' + message + '</p></div></div>';
+                input.value = '';
+                setTimeout(function() {
+                    var r = '<p>🤔 Ask me about: Men, Women, Kids, Cart, Contact</p>';
+                    var l = message.toLowerCase();
+                    if (l.includes('hi') || l.includes('hello')) r = '<p>👋 Hello! How can I help?</p>';
+                    else if (l.includes('women')) r = '<p>👗 Check <a href="womens.html" style="color:#ff4d6d;">Women\'s Collection</a>!</p>';
+                    else if (l.includes('kid')) r = '<p>🧒 Check <a href="kids.html" style="color:#ff4d6d;">Kids Collection</a>!</p>';
+                    else if (l.includes('cart') || l.includes('buy')) r = '<p>🛒 Click "Add to Cart" on any product!</p>';
+                    else if (l.includes('contact')) r = '<p>📞 info@fashionhub.com | +1 234 567 890</p>';
+                    d.innerHTML += '<div class="chatbot-message bot-message"><div class="message-content">' + r + '</div></div>';
+                    d.scrollTop = d.scrollHeight;
+                }, 500);
+            }
+        }
+        
+        function filterMenBySubCategory(subCategory) {
+            var products = getProductsByCategoryAndSub('men', subCategory);
+            renderProducts(products, 'productCards');
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeProducts();
+            initializeUsers();
+            updateCartCount();
+            updateNavigation();
+            var products = getProductsByCategory('men');
+            renderProducts(products, 'productCards');
+        });
+        
+        window.toggleChatbot = toggleChatbot;
+        window.sendMessage = sendMessage;
+        window.handleChatKeyPress = handleChatKeyPress;
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+# Docker ignore file
+.dockerignore
+.git
+.gitignore
+README.md
+.hintrc
+*.md
+TODO.md

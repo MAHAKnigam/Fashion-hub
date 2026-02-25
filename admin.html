@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion Hub - Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav>
+        <div class="logo">Fashion Hub - Admin</div>
+        
+        <div class="menu-toggle" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        
+        <ul id="navMenu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="collection.html">Collection</a></li>
+            <li><a href="mens.html">Men's</a></li>
+            <li><a href="womens.html">Women's</a></li>
+            <li><a href="kids.html">Kids</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="admin.html" class="active">Admin</a></li>
+            <li><a href="cart.html">🛒 Cart (<span id="cartCount">0</span>)</a></li>
+            <li id="loginLink"><a href="login.html">Login</a></li>
+            <li id="signupLink"><a href="signup.html">Sign Up</a></li>
+            <li id="userLink" style="display:none;"><span class="user-greeting"></span></li>
+            <li id="logoutLink" style="display:none;"><a href="#" onclick="logOut()">Logout</a></li>
+        </ul>
+    </nav>
+
+    <section class="section admin-section">
+        <h1>Product Management</h1>
+        
+        <div class="admin-controls">
+            <button onclick="showProductForm()">+ Add New Product</button>
+            <div class="filter-group">
+                <label>Filter by Category:</label>
+                <select id="categoryFilter" onchange="filterAdminProducts(this.value)">
+                    <option value="all">All Products</option>
+                    <option value="men">Men's</option>
+                    <option value="women">Women's</option>
+                    <option value="kids">Kids</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="product-form-container" id="productForm" style="display: none;">
+            <h3 id="formTitle">Add New Product</h3>
+            <form onsubmit="return handleProductSubmit(event)">
+                <input type="hidden" id="productId">
+                
+                <div class="form-group">
+                    <label for="productName">Product Name</label>
+                    <input type="text" id="productName" placeholder="Enter product name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="productDescription">Description</label>
+                    <textarea id="productDescription" placeholder="Enter product description" rows="3" required></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="productPrice">Price ($)</label>
+                        <input type="number" id="productPrice" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="productCategory">Category</label>
+                        <select id="productCategory" required onchange="updateSubCategoryOptions(this.value)">
+                            <option value="">Select Category</option>
+                            <option value="men">Men's</option>
+                            <option value="women">Women's</option>
+                            <option value="kids">Kids</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="productSubCategory">Sub-Category</label>
+                    <select id="productSubCategory" required>
+                        <option value="">Select Sub-Category</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="productImage">Image URL</label>
+                    <input type="url" id="productImage" placeholder="https://example.com/image.jpg" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="edit-btn">Save Product</button>
+                    <button type="button" onclick="hideProductForm()" class="cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="admin-product-list" id="adminProducts">
+            <!-- Products will be loaded here -->
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Fashion Hub. All Rights Reserved.</p>
+    </footer>
+
+    <!-- Mavi Chatbot -->
+    <div class="chatbot-toggle" onclick="toggleChatbot()">
+        <span class="chatbot-icon">💬</span>
+        <span class="chatbot-badge">Mavi</span>
+    </div>
+    
+    <div class="chatbot-container" id="chatbot">
+        <div class="chatbot-header">
+            <div class="chatbot-title">
+                <span class="chatbot-avatar">👗</span>
+                <span>Mavi - Your Fashion Assistant</span>
+            </div>
+            <button class="chatbot-close" onclick="toggleChatbot()">✕</button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="chatbot-message bot-message">
+                <div class="message-content">
+                    <p>👋 Hi Admin! I'm <strong>Mavi</strong>!</p>
+                    <p>I can help you manage products and navigate the site.</p>
+                </div>
+            </div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatbotInput" placeholder="Ask Mavi anything..." onkeypress="handleChatKeyPress(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <style>
+        .chatbot-toggle { position: fixed; bottom: 30px; right: 30px; width: 70px; height: 70px; background: linear-gradient(135deg, #ff4d6d, #ff8a80); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 30px rgba(255,77,109,0.4); z-index: 999; }
+        .chatbot-toggle:hover { transform: scale(1.1); }
+        .chatbot-icon { font-size: 28px; }
+        .chatbot-badge { font-size: 10px; color: white; font-weight: bold; }
+        .chatbot-container { position: fixed; bottom: 120px; right: 30px; width: 380px; height: 500px; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); z-index: 1000; display: none; flex-direction: column; }
+        .chatbot-container.active { display: flex; }
+        .chatbot-header { background: linear-gradient(135deg, #ff4d6d, #ff8a80); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .chatbot-title { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+        .chatbot-avatar { font-size: 24px; }
+        .chatbot-close { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+        .chatbot-messages { flex: 1; padding: 20px; overflow-y: auto; background: #f9f9f9; }
+        .chatbot-message { margin-bottom: 15px; display: flex; }
+        .bot-message { justify-content: flex-start; }
+        .user-message { justify-content: flex-end; }
+        .message-content { max-width: 80%; padding: 12px 16px; border-radius: 15px; font-size: 14px; }
+        .bot-message .message-content { background: white; border: 1px solid #eee; }
+        .user-message .message-content { background: linear-gradient(135deg, #ff4d6d, #ff8a80); color: white; }
+        .chatbot-input { padding: 15px; background: white; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        .chatbot-input input { flex: 1; padding: 12px 15px; border: 2px solid #eee; border-radius: 25px; outline: none; }
+        .chatbot-input input:focus { border-color: #ff4d6d; }
+        .chatbot-input button { padding: 12px 25px; background: linear-gradient(135deg, #ff4d6d, #ff8a80); color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: 600; }
+        @media(max-width: 768px) { .chatbot-container { width: calc(100% - 40px); right: 20px; bottom: 100px; } }
+    </style>
+
+    <script src="script.js"></script>
+    <script>
+        function toggleChatbot() { document.getElementById('chatbot').classList.toggle('active'); }
+        function handleChatKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+        function sendMessage() {
+            var input = document.getElementById('chatbotInput');
+            var message = input.value.trim();
+            if (message) {
+                var d = document.getElementById('chatbotMessages');
+                d.innerHTML += '<div class="chatbot-message user-message"><div class="message-content"><p>' + message + '</p></div></div>';
+                input.value = '';
+                setTimeout(function() {
+                    var r = '<p>🤔 I can help with product management and navigation!</p>';
+                    var l = message.toLowerCase();
+                    if (l.includes('hi') || l.includes('hello')) r = '<p>👋 Hello Admin! How can I help?</p>';
+                    else if (l.includes('product') || l.includes('add')) r = '<p>📦 Use the "Add New Product" button to add products!</p>';
+                    else if (l.includes('men')) r = '<p>👔 <a href="mens.html" style="color:#ff4d6d;">Men\'s Collection</a></p>';
+                    else if (l.includes('women')) r = '<p>👗 <a href="womens.html" style="color:#ff4d6d;">Women\'s Collection</a></p>';
+                    else if (l.includes('kid')) r = '<p>🧒 <a href="kids.html" style="color:#ff4d6d;">Kids Collection</a></p>';
+                    else if (l.includes('collection')) r = '<p>🛍️ <a href="collection.html" style="color:#ff4d6d;">All Products</a></p>';
+                    else if (l.includes('home')) r = '<p>🏠 <a href="index.html" style="color:#ff4d6d;">Go to Home</a></p>';
+                    d.innerHTML += '<div class="chatbot-message bot-message"><div class="message-content">' + r + '</div></div>';
+                    d.scrollTop = d.scrollHeight;
+                }, 500);
+            }
+        }
+        
+        var SUB_CATEGORIES = { men: ['Shirts', 'Pants', 'Jackets', 'Shoes', 'Accessories'], women: ['Dresses', 'Tops', 'Pants', 'Shoes', 'Accessories'], kids: ['Boys', 'Girls', 'Shoes', 'Accessories'] };
+        
+        function updateSubCategoryOptions(category, selectedSubCategory) {
+            var subCategorySelect = document.getElementById('productSubCategory');
+            if (!subCategorySelect) return;
+            subCategorySelect.innerHTML = '<option value="">Select Sub-Category</option>';
+            if (category && SUB_CATEGORIES[category]) {
+                SUB_CATEGORIES[category].forEach(function(subCat) {
+                    var option = document.createElement('option');
+                    option.value = subCat;
+                    option.textContent = subCat;
+                    if (subCat === selectedSubCategory) { option.selected = true; }
+                    subCategorySelect.appendChild(option);
+                });
+            }
+        }
+
+        function showProductForm(product) {
+            var formContainer = document.getElementById('productForm');
+            var isEdit = product !== null;
+            if (formContainer) {
+                formContainer.style.display = 'block';
+                var formTitle = document.getElementById('formTitle');
+                if (formTitle) { formTitle.textContent = isEdit ? 'Edit Product' : 'Add New Product'; }
+                document.getElementById('productId').value = isEdit ? product.id : '';
+                document.getElementById('productName').value = isEdit ? product.name : '';
+                document.getElementById('productDescription').value = isEdit ? product.description : '';
+                document.getElementById('productPrice').value = isEdit ? product.price : '';
+                document.getElementById('productImage').value = isEdit ? product.image : '';
+                document.getElementById('productCategory').value = isEdit ? product.category : '';
+                updateSubCategoryOptions(isEdit ? product.category : 'men', isEdit ? product.subCategory : '');
+                if (isEdit && product.subCategory) { document.getElementById('productSubCategory').value = product.subCategory; }
+                formContainer.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        document.querySelectorAll('#navMenu li a').forEach(function(link) {
+            link.addEventListener('click', function() {
+                var navMenu = document.getElementById('navMenu');
+                var menuToggle = document.querySelector('.menu-toggle');
+                if (navMenu) navMenu.classList.remove('active');
+                if (menuToggle) menuToggle.classList.remove('active');
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeProducts();
+            initializeUsers();
+            var user = getCurrentUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+            if (user.role !== 'admin') { alert('Access Denied! Only admins can access this page.'); window.location.href = 'index.html'; return; }
+            loadAdminProducts();
+            updateCartCount();
+            updateNavigation();
+        });
+        
+        window.toggleChatbot = toggleChatbot;
+        window.sendMessage = sendMessage;
+        window.handleChatKeyPress = handleChatKeyPress;
+    </script>
+</body>
+</html>
