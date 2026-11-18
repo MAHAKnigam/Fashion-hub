@@ -35,6 +35,51 @@
     return fields.map(value => '<p>' + escapeHTML(value) + '</p>').join('');
   }
 
+  function renderTracking(order, payment) {
+    const status = String(order.status || 'pending_payment').toLowerCase();
+    const steps = [
+      { key: 'placed', label: 'Order Placed', note: 'We have received your order.' },
+      { key: 'confirmed', label: 'Payment Confirmed', note: 'Your payment has been confirmed.' },
+      { key: 'processing', label: 'Processing', note: 'Your order is being prepared.' },
+      { key: 'shipped', label: 'Shipped', note: 'Your order is on its way.' },
+      { key: 'delivered', label: 'Delivered', note: 'Your order has been delivered.' }
+    ];
+    const statusIndex = {
+      pending_payment: 0, paid: 1, processing: 2, shipped: 3, delivered: 4,
+      cancelled: 0, payment_failed: 0, refunded: 1
+    };
+    const completedThrough = statusIndex[status] ?? 0;
+    const paymentCaptured = payment && payment.status === 'captured';
+    const exceptional = ['cancelled', 'payment_failed', 'refunded'].includes(status);
+    const stepsMarkup = steps.map((step, index) => {
+      let complete = index <= completedThrough;
+      if (index === 1 && !paymentCaptured && status !== 'refunded') complete = false;
+      if (exceptional && index > (status === 'refunded' ? 1 : 0)) complete = false;
+      const current = !exceptional && index === completedThrough;
+      return `
+        <div class="tracking-step ${complete ? 'is-complete' : ''} ${current ? 'is-current' : ''}">
+          <span class="tracking-dot" aria-hidden="true">${complete ? '✓' : ''}</span>
+          <div class="tracking-copy">
+            <strong>${step.label}</strong>
+            <span>${step.note}</span>
+          </div>
+        </div>`;
+    }).join('');
+    let alert = '';
+    if (status === 'pending_payment') alert = '<p class="tracking-alert">Your order is waiting for payment confirmation. The timeline will update when payment is confirmed.</p>';
+    if (status === 'payment_failed') alert = '<p class="tracking-alert">Payment was not completed. Please contact support if money was deducted from your account.</p>';
+    if (status === 'cancelled') alert = '<p class="tracking-alert">This order has been cancelled.</p>';
+    if (status === 'refunded') alert = '<p class="tracking-alert">This order has been refunded.</p>';
+    return `
+      <section class="details-card tracking-card">
+        <h2>Order tracking</h2>
+        <p class="tracking-caption">Current status: <strong>${escapeHTML(status.replaceAll('_', ' '))}</strong></p>
+        <div class="tracking-list">${stepsMarkup}</div>
+        ${alert}
+        <p class="tracking-footnote">Tracking reflects the latest order status recorded by Fashion Hub. Delivery dates will appear when shipment updates are added.</p>
+      </section>`;
+  }
+
   function renderOrder(order) {
     const items = Array.isArray(order.order_items) ? order.order_items : [];
     const paymentValue = order.payments;
@@ -55,6 +100,7 @@
 
     container.className = '';
     container.innerHTML = `
+      ${renderTracking(order, payment)}
       <section class="details-card">
         <div class="details-top">
           <div>
