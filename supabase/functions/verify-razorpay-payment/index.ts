@@ -48,9 +48,10 @@ Deno.serve(async (req) => {
     if (orderError || !order || order.user_id !== user.id) return json({ error: "Order not found" }, 404);
 
     const { data: payment, error: paymentError } = await admin
-      .from("payments").select("id,gateway_order_id,amount_paise,status").eq("order_id", orderId).single();
+      .from("payments").select("id,gateway_order_id,gateway_payment_id,amount_paise,status").eq("order_id", orderId).single();
     if (paymentError || !payment || payment.gateway_order_id !== razorpayOrderId ||
-        Number(payment.amount_paise) !== Number(order.total_paise)) {
+        Number(payment.amount_paise) !== Number(order.total_paise) ||
+        (payment.gateway_payment_id && payment.gateway_payment_id !== razorpayPaymentId)) {
       return json({ error: "Payment does not match this order" }, 400);
     }
 
@@ -62,13 +63,11 @@ Deno.serve(async (req) => {
     for (let i = 0; i < a.length; i++) mismatch |= a[i] ^ b[i];
     if (mismatch !== 0) return json({ error: "Invalid payment signature" }, 400);
 
-    const { error: updatePaymentError } = await admin.from("payments").update({
-      gateway_payment_id: razorpayPaymentId,
-      status: "authorized",
-    }).eq("id", payment.id);
-    if (updatePaymentError) throw new Error("Could not update payment record");
+    if (payment.status === "refunded") {
+      return json({ error: "This payment has already been refunded" }, 409);
+    }
 
-    // Mark paid only after a verified signature and a server-side Razorpay status check.
+    // Confirm the payment with Razorpay before mutating local payment/order state.
     const razorpayFetch = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(razorpayPaymentId)}`, {
       headers: {
         "Authorization": "Basic " + btoa(`${Deno.env.get("RAZORPAY_KEY_ID")}:${razorpaySecret}`),
@@ -79,14 +78,25 @@ Deno.serve(async (req) => {
         Number(razorpayPayment.amount) !== Number(order.total_paise) ||
         razorpayPayment.currency !== "INR" ||
         !["authorized", "captured"].includes(razorpayPayment.status)) {
-      await admin.from("payments").update({ status: "failed" }).eq("id", payment.id);
+      // Do not mark a payment failed merely because this confirmation request
+      // failed or returned a non-final state; the webhook can reconcile it.
       return json({ error: "Razorpay payment could not be confirmed" }, 400);
     }
 
-    const finalStatus = razorpayPayment.status === "captured" ? "captured" : "authorized";
-    await admin.from("payments").update({ status: finalStatus }).eq("id", payment.id);
+    const gatewayStatus = razorpayPayment.status === "captured" ? "captured" : "authorized";
+    // A repeated verification must not downgrade an already captured payment.
+    const finalStatus = payment.status === "captured" ? "captured" : gatewayStatus;
+    const { error: paymentUpdateError } = await admin.from("payments").update({
+      gateway_payment_id: razorpayPaymentId,
+      status: finalStatus,
+    }).eq("id", payment.id);
+    if (paymentUpdateError) throw new Error("Could not update payment record");
+
     if (finalStatus === "captured") {
-      await admin.from("orders").update({ status: "paid" }).eq("id", order.id);
+      // Do not reset processing/shipped/delivered orders to "paid" on a retry.
+      const { error: orderUpdateError } = await admin.from("orders").update({ status: "paid" })
+        .eq("id", order.id).in("status", ["pending_payment", "payment_failed"]);
+      if (orderUpdateError) throw new Error("Could not update order status");
     }
     return json({ verified: true, paymentStatus: finalStatus, orderId: order.id });
   } catch (error) {
