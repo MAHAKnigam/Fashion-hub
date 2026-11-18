@@ -26,6 +26,23 @@
     .details-total{display:flex;justify-content:space-between;gap:15px;padding-top:16px;margin-top:10px;border-top:1px solid #eee;font-size:1.2rem;font-weight:700;color:var(--primary-color)}
     .details-back{display:inline-block;margin:4px 0 20px;color:var(--primary-color);font-weight:600;text-decoration:none}
     @media(max-width:600px){.details-section{padding:30px 14px}.details-card{padding:18px}.details-section h1{font-size:1.8rem}}
+  <style>
+    .tracking-card h2{font-size:1.15rem;color:#333;margin:0 0 8px}
+    .tracking-caption{color:#777;margin:0 0 22px}
+    .tracking-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;position:relative}
+    .tracking-step{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+    .tracking-step:not(:last-child)::after{content:"";position:absolute;height:3px;background:#e7e7e7;left:calc(50% + 15px);right:calc(-50% + 15px);top:13px;z-index:0}
+    .tracking-step.is-complete:not(:last-child)::after{background:#ff8a80}
+    .tracking-dot{width:28px;height:28px;border-radius:50%;border:2px solid #ddd;background:#fff;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;z-index:1}
+    .tracking-step.is-complete .tracking-dot{background:#ff4d6d;border-color:#ff4d6d}
+    .tracking-step.is-current .tracking-dot{box-shadow:0 0 0 5px rgba(255,77,109,.13)}
+    .tracking-copy{display:flex;flex-direction:column;gap:5px}
+    .tracking-copy strong{font-size:.88rem;color:#333}
+    .tracking-copy span{font-size:.76rem;line-height:1.4;color:#888}
+    .tracking-alert{padding:12px 14px;background:#fff3ed;border-radius:8px;color:#9b5425;margin:20px 0 0;line-height:1.5}
+    .tracking-footnote{font-size:.82rem;color:#888;margin:18px 0 0;line-height:1.5}
+    @media(max-width:650px){.tracking-list{grid-template-columns:1fr;gap:0}.tracking-step{flex-direction:row;align-items:flex-start;text-align:left;min-height:68px;gap:13px}.tracking-step:not(:last-child)::after{width:3px;height:auto;top:28px;bottom:0;left:13px;right:auto}.tracking-copy strong{font-size:.9rem}.tracking-copy span{font-size:.82rem}}
+  </style>
   </style>
 </head>
 <body>
