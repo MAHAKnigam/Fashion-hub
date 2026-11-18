@@ -150,7 +150,23 @@ async function loadProductsFromSupabase() {
     }
     const products = (data || []).map(mapSupabaseProduct).filter(product => Number.isFinite(product.id));
     localStorage.setItem('fashionProducts', JSON.stringify(products));
+
+    // Refresh saved cart metadata and attach database UUIDs to older cart entries.
+    const productByLegacyId = new Map(products.map(product => [product.id, product]));
+    const refreshedCart = getCart().map(item => {
+        const currentProduct = productByLegacyId.get(item.id);
+        return currentProduct ? {
+            ...item,
+            dbId: currentProduct.dbId,
+            name: currentProduct.name,
+            price: currentProduct.price,
+            image: currentProduct.image
+        } : item;
+    });
+    saveCart(refreshedCart);
+    updateCartCount();
     renderCurrentPageProducts();
+    if (document.getElementById('cartItems')) renderCartItems();
     return true;
 }
 
