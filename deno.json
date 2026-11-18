@@ -1,4 +1,5 @@
 {
+  "nodeModulesDir": "auto",
   "lint": {
     "include": ["supabase/functions"],
     "rules": {
