@@ -54,6 +54,9 @@
             <span class="order-total-label">Order total</span>
             <span class="order-total">${formatINRFromPaise(order.total_paise)}</span>
           </div>
+          <div style="text-align:right;margin-top:16px;">
+            <a class="continue-shopping" href="order-details.html?id=${encodeURIComponent(order.id)}">View order details</a>
+          </div>
         </article>`;
     }).join('');
   }
