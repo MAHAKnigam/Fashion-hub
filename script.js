@@ -210,8 +210,14 @@ function deleteProduct(id) {
 
 // Get cart from localStorage
 function getCart() {
-    const cart = localStorage.getItem('fashionCart');
-    return cart ? JSON.parse(cart) : [];
+    try {
+        const storedCart = JSON.parse(localStorage.getItem('fashionCart') || '[]');
+        if (!Array.isArray(storedCart)) return [];
+        return storedCart.filter(item => item && Number.isFinite(Number(item.id)) && Number.isFinite(Number(item.price)) && Number(item.price) >= 0 && Number.isInteger(Number(item.quantity)) && Number(item.quantity) > 0).map(item => ({ ...item, id: Number(item.id), price: Number(item.price), quantity: Number(item.quantity) }));
+    } catch (error) {
+        console.error('Could not read the saved cart:', error);
+        return [];
+    }
 }
 
 // Save cart to localStorage
@@ -233,7 +239,7 @@ function addToCart(productIdOrName) {
         product = getProductById(productIdOrName);
     } else {
         const products = getProducts();
-        product = products.find(p => p.name === productIdOrName);
+        product = products.find(p => p.name === productIdOrName || p.id === Number(productIdOrName));
     }
     
     if (product) {
@@ -269,20 +275,16 @@ function removeFromCart(productId) {
 
 // Update item quantity
 function updateQuantity(productId, change) {
-    const cart = getCart();
-    const item = cart.find(item => item.id === productId);
-    
-    if (item) {
-        item.quantity += change;
-        
-        if (item.quantity <= 0) {
-            cart = cart.filter(i => i.id !== productId);
-        }
-        
-        saveCart(cart);
-        updateCartCount();
-        renderCartItems();
-    }
+    let cart = getCart();
+    const id = Number(productId);
+    const amount = Number(change);
+    const item = cart.find(cartItem => cartItem.id === id);
+    if (!item || !Number.isInteger(amount) || amount === 0) return;
+    item.quantity += amount;
+    if (item.quantity <= 0) cart = cart.filter(cartItem => cartItem.id !== id);
+    saveCart(cart);
+    updateCartCount();
+    renderCartItems();
 }
 
 // Calculate cart total
@@ -491,7 +493,7 @@ function renderProducts(products, containerId, showCategory = false) {
                 <h3>${product.name}</h3>
                 <p>${product.description}</p>
                 <p class="price">$${parseFloat(product.price).toFixed(2)}</p>
-                <button onclick="addToCart('${product.name}')">Add to Cart</button>
+                <button onclick="addToCart(${Number(product.id)})">Add to Cart</button>
             </div>
         `;
         container.appendChild(card);
@@ -716,27 +718,17 @@ function showToast(message, type = 'info') {
 
 // Load products based on current page
 function loadPageProducts() {
-    initializeProducts(); // Ensure products are initialized
-
-    const path = window.location.pathname;
-    const filename = path.split('/').pop();
-    
-    // Collection page - show all products
-    if (filename === 'collection.html') {
-        const products = getProducts();
-        renderProducts(products, 'productCards', true);
-    }
-    
-    // Men's page - show men's products
-    if (filename === 'mens.html') {
-        const products = getProductsByCategory('men');
-        renderProducts(products, 'productCards');
-    }
-    
-    // Women's page - show women's products
-    if (filename === 'womens.html') {
-        const products = getProductsByCategory('women');
-        renderProducts(products, 'productCards');
+    initializeProducts();
+    const filename = window.location.pathname.split('/').pop();
+    const categoryByPage = { 'mens.html': 'men', 'womens.html': 'women', 'kids.html': 'kids' };
+    const categoryFilter = document.getElementById('categoryFilter');
+    const subCategoryFilter = document.getElementById('subCategoryFilter');
+    let category = categoryByPage[filename] || 'all';
+    if (filename === 'collection.html' && categoryFilter && categoryFilter.value) category = categoryFilter.value;
+    if (filename === 'collection.html' || category !== 'all') {
+        let products = getProductsByCategory(category);
+        if (subCategoryFilter && subCategoryFilter.value && subCategoryFilter.value !== 'all') products = products.filter(product => product.subCategory === subCategoryFilter.value);
+        renderProducts(products, 'productCards', filename === 'collection.html');
     }
 }
 
