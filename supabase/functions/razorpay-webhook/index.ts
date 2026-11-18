@@ -39,16 +39,31 @@ Deno.serve(async (req) => {
       // Webhooks may be retried or delivered out of order. Never let an old
       // failure overwrite a capture, or let a duplicate capture reset fulfilment.
       if (event.event === "payment.captured" && payment.status !== "refunded") {
+        const { data: stockConfirmed, error: stockError } = await admin.rpc(
+          "confirm_order_stock", { p_order_id: payment.order_id },
+        );
+        if (stockError) throw stockError;
+
         const { error: paymentUpdateError } = await admin.from("payments").update({
           gateway_payment_id: entity.id, status: "captured",
         }).eq("id", payment.id);
         if (paymentUpdateError) throw paymentUpdateError;
 
-        const { error: orderUpdateError } = await admin.from("orders").update({ status: "paid" })
-          .eq("id", payment.order_id).in("status", ["pending_payment", "payment_failed"]);
+        const { error: orderUpdateError } = await admin.from("orders").update({
+          status: "paid",
+          inventory_issue: stockConfirmed !== true,
+        }).eq("id", payment.order_id).in("status", ["pending_payment", "payment_failed"]);
         if (orderUpdateError) throw orderUpdateError;
+        if (stockConfirmed !== true) {
+          await admin.from("orders").update({ inventory_issue: true }).eq("id", payment.order_id);
+        }
       } else if (event.event === "payment.failed" &&
           !["captured", "refunded"].includes(payment.status)) {
+        const { error: releaseError } = await admin.rpc(
+          "release_order_stock", { p_order_id: payment.order_id },
+        );
+        if (releaseError) throw releaseError;
+
         const { error: paymentUpdateError } = await admin.from("payments").update({
           gateway_payment_id: entity.id, status: "failed",
         }).eq("id", payment.id).in("status", ["created", "authorized", "failed"]);
