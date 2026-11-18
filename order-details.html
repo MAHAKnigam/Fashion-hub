@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fashion Hub - Order Details</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .details-section{max-width:1000px;min-height:70vh;margin:0 auto;padding:48px 22px}
+    .details-section h1{text-align:center;color:#333;margin:0 0 10px;font-size:2.2rem}
+    .details-intro{text-align:center;color:#666;margin-bottom:28px}
+    .details-message,.details-card{background:#fff;border-radius:15px;padding:24px;box-shadow:0 5px 20px rgba(0,0,0,.07);margin-bottom:20px}
+    .details-top{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #eee;padding-bottom:18px;margin-bottom:18px}
+    .details-order-id{font-weight:700;color:#333;overflow-wrap:anywhere}
+    .details-date{color:#777;font-size:.92rem;margin-top:6px}
+    .details-status{display:inline-block;padding:7px 13px;border-radius:20px;background:#eef7ee;color:#287a35;font-weight:700;text-transform:capitalize}
+    .details-status.pending_payment,.details-status.payment_failed,.details-status.cancelled{background:#fff2e8;color:#a85b19}
+    .details-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+    .details-card h2{font-size:1.15rem;color:#333;margin:0 0 15px}
+    .details-card p{color:#555;line-height:1.7;margin:5px 0;overflow-wrap:anywhere}
+    .detail-item{display:flex;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid #eee}
+    .detail-item:last-child{border-bottom:0}
+    .detail-item-name{font-weight:600;color:#333}
+    .detail-muted{font-size:.9rem;color:#777;margin-top:5px}
+    .detail-price{font-weight:600;color:#333;white-space:nowrap}
+    .details-total{display:flex;justify-content:space-between;gap:15px;padding-top:16px;margin-top:10px;border-top:1px solid #eee;font-size:1.2rem;font-weight:700;color:var(--primary-color)}
+    .details-back{display:inline-block;margin:4px 0 20px;color:var(--primary-color);font-weight:600;text-decoration:none}
+    @media(max-width:600px){.details-section{padding:30px 14px}.details-card{padding:18px}.details-section h1{font-size:1.8rem}}
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo">Fashion Hub</div>
+    <div class="menu-toggle" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+    <ul id="navMenu">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="collection.html">Collection</a></li>
+      <li><a href="mens.html">Men's</a></li>
+      <li><a href="womens.html">Women's</a></li>
+      <li><a href="kids.html">Kids</a></li>
+      <li><a href="cart.html">🛒 Cart (<span id="cartCount">0</span>)</a></li>
+      <li><a href="order-history.html" class="active">My Orders</a></li>
+      <li id="loginLink"><a href="login.html">Login</a></li>
+      <li id="signupLink"><a href="signup.html">Sign Up</a></li>
+      <li id="userLink" style="display:none"><span class="user-greeting"></span></li>
+      <li id="logoutLink" style="display:none"><a href="#" onclick="logOut()">Logout</a></li>
+    </ul>
+  </nav>
+
+  <main class="details-section">
+    <a class="details-back" href="order-history.html">← Back to My Orders</a>
+    <h1>Order Details</h1>
+    <p class="details-intro">Your order, delivery and payment information.</p>
+    <div id="orderDetailsContainer" class="details-message" aria-live="polite">Loading order details...</div>
+  </main>
+
+  <footer><p>&copy; 2024 Fashion Hub. All Rights Reserved.</p></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="script.js"></script>
+  <script src="order-details.js"></script>
+</body>
+</html>
