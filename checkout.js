@@ -141,7 +141,11 @@
               if (summary) summary.style.display = "none";
               const checkoutForm = document.getElementById("checkoutAddressForm");
               if (checkoutForm) checkoutForm.hidden = true;
-              checkoutMessage("Payment successful! Your Fashion Hub order is confirmed. Order ID: " + orderData.orderId, "success");
+              if (verification.inventoryConfirmed === false) {
+                checkoutMessage("Payment received, but stock needs a manual check before fulfilment. Please contact support with order ID: " + orderData.orderId, "error");
+              } else {
+                checkoutMessage("Payment successful! Your Fashion Hub order is confirmed. Order ID: " + orderData.orderId, "success");
+              }
             } else {
               checkoutMessage("Payment is authorized and awaiting final confirmation. Please keep your order ID: " + orderData.orderId, "info");
             }
