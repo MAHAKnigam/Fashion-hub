@@ -779,7 +779,7 @@ function proceedToCheckout() {
         userId: user.id,
         items: cart,
         total: getCartTotal(),
-        status: 'pending',
+        status: 'demo - payment not processed',
         createdAt: new Date().toISOString()
     };
     
@@ -787,7 +787,7 @@ function proceedToCheckout() {
     orders.push(order);
     localStorage.setItem('fashionOrders', JSON.stringify(orders));
     
-    showToast('Order placed successfully! Thank you for shopping!', 'success');
+    showToast('Demo order saved on this device. No payment was processed.', 'info');
     
     // Clear cart
     saveCart([]);
