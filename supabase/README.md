@@ -6,13 +6,15 @@ The application uses Supabase Auth, PostgreSQL, Row Level Security and Edge Func
 
 Create a project at https://supabase.com/dashboard. In Project Settings / API, copy the Project URL and publishable key (or legacy anon key). Never put the service-role key, Razorpay secret, or database password in browser code or Git.
 
-## 2. Apply the database migration
+## 2. Apply the database migrations
 
-In Supabase Dashboard → SQL Editor, run the complete file:
+In Supabase Dashboard → SQL Editor, apply these files in order:
 
-`supabase/migrations/202611180001_initial_schema.sql`
+1. `supabase/migrations/202611180001_initial_schema.sql`
+2. `supabase/migrations/202611180002_checkout_indexes.sql`
+3. `supabase/migrations/202611190001_atomic_stock_reservations.sql`
 
-The schema creates profiles, categories, products, addresses, orders, order_items and payments, plus Row Level Security policies. Order/payment writes are intentionally restricted to trusted Edge Functions.
+The migrations create the commerce schema, indexes, Row Level Security policies and atomic stock-reservation functions. Order, payment and stock-reservation writes are intentionally restricted to trusted Edge Functions. Do not deploy the updated checkout functions before applying all three migrations.
 
 ## 3. Add frontend configuration
 
@@ -47,6 +49,9 @@ Subscribe to `payment.captured` and `payment.failed`, then copy the webhook secr
 - Create the first admin profile manually in the SQL Editor only after signing up that account. Never grant admin based on browser storage or user-submitted metadata.
 - Configure Supabase Auth email settings and allowed redirect URLs.
 - Configure Razorpay test mode first. Complete successful, failed, cancelled and duplicate-webhook tests before enabling live credentials.
-- Add address validation, stock reservation/decrement, shipping/tax rules, refunds and operational policies before production.
+- Apply the atomic stock-reservation migration before deploying the updated checkout functions. Stock is reserved for 15 minutes, released on payment failure, and committed after a captured payment. Expired reservations are cleaned up whenever a new checkout starts.
+- For automatic cleanup even when no new checkout starts, enable the Supabase `pg_cron` extension and schedule `select public.expire_stock_reservations();` every five minutes.
+- Test simultaneous attempts to buy the last unit, payment failure, checkout abandonment/expiry, late payment capture and duplicate/out-of-order webhooks in Razorpay Test Mode.
+- Configure shipping/tax rules, refunds, support handling and operational policies before production.
 
-The Edge Functions currently use zero shipping charge. Do not launch until the shipping/tax policy and inventory update flow are implemented and tested.
+The Edge Functions currently use zero shipping charge. The updated GitHub branch is not live until its database migration and Edge Functions are applied/deployed in Supabase.
