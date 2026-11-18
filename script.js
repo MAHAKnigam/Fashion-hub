@@ -13,7 +13,7 @@ const SUB_CATEGORIES = {
 // Main categories
 const MAIN_CATEGORIES = ['men', 'women', 'kids'];
 
-// Initialize products in localStorage with sample data
+// Initialize a local fallback catalogue. Supabase replaces this cache when available.
 function initializeProducts() {
     const defaultProducts = [
         // ==================== MEN'S COLLECTION ====================
@@ -134,6 +134,30 @@ function initializeProducts() {
     }
 }
 
+// Convert database rows to the existing frontend product shape.
+function mapSupabaseProduct(row) {
+    return { id: Number(row.legacy_id), dbId: row.id, name: row.name, description: row.description || '', price: Number(row.price_paise) / 100, image: row.image_url || '', category: row.category, subCategory: row.sub_category || 'Other', stockQuantity: Number(row.stock_quantity || 0) };
+}
+
+async function loadProductsFromSupabase() {
+    const client = window.fashionSupabase;
+    if (!client) return false;
+    const { data, error } = await client.from('products').select('id, legacy_id, name, description, price_paise, image_url, category, sub_category, stock_quantity').eq('is_active', true).order('legacy_id', { ascending: true });
+    if (error) {
+        console.error('Could not load products from Supabase:', error.message);
+        showToast('Could not refresh products. Showing saved catalogue.', 'error');
+        return false;
+    }
+    const products = (data || []).map(mapSupabaseProduct).filter(product => Number.isFinite(product.id));
+    localStorage.setItem('fashionProducts', JSON.stringify(products));
+    renderCurrentPageProducts();
+    return true;
+}
+
+function formatINR(amount) {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(Number(amount) || 0);
+}
+
 // ==================== CRUD OPERATIONS ====================
 
 // CREATE - Add a new product
@@ -248,12 +272,14 @@ function addToCart(productIdOrName) {
         
         if (existingItem) {
             existingItem.quantity += 1;
+            if (product.dbId) existingItem.dbId = product.dbId;
         } else {
             cart.push({
                 id: product.id,
                 name: product.name,
                 price: product.price,
                 image: product.image,
+                dbId: product.dbId || null,
                 quantity: 1
             });
         }
@@ -330,7 +356,7 @@ function renderCartItems() {
             <img src="${item.image}" alt="${item.name}" class="cart-item-image">
             <div class="cart-item-details">
                 <h3>${item.name}</h3>
-                <p class="cart-item-price">$${item.price.toFixed(2)}</p>
+                <p class="cart-item-price">${formatINR(item.price)}</p>
             </div>
             <div class="cart-item-quantity">
                 <button onclick="updateQuantity(${item.id}, -1)">-</button>
@@ -338,7 +364,7 @@ function renderCartItems() {
                 <button onclick="updateQuantity(${item.id}, 1)">+</button>
             </div>
             <div class="cart-item-total">
-                $${(item.price * item.quantity).toFixed(2)}
+                ${formatINR(item.price * item.quantity)}
             </div>
             <button class="remove-btn" onclick="removeFromCart(${item.id})">Remove</button>
         </div>
@@ -352,7 +378,7 @@ function updateCartTotal() {
     const totalElements = document.querySelectorAll('#cartTotal');
     const total = getCartTotal();
     totalElements.forEach(el => {
-        el.textContent = total.toFixed(2);
+        el.textContent = formatINR(total);
     });
 }
 
@@ -462,7 +488,7 @@ function renderProducts(products, containerId, showCategory = false) {
             <div class="card-content">
                 <h3>${product.name}</h3>
                 <p>${product.description}</p>
-                <p class="price">$${parseFloat(product.price).toFixed(2)}</p>
+                <p class="price">${formatINR(product.price)}</p>
                 <button onclick="addToCart(${Number(product.id)})">Add to Cart</button>
             </div>
         `;
@@ -517,7 +543,7 @@ function renderAdminProductsTable(container, products) {
                 <td>${product.name}</td>
                 <td>${product.category}</td>
                 <td>${product.subCategory || 'N/A'}</td>
-                <td>$${parseFloat(product.price).toFixed(2)}</td>
+                <td>${formatINR(product.price)}</td>
                 <td>
                     <button class="edit-btn" onclick="editProductForm(${product.id})">Edit</button>
                     <button class="delete-btn" onclick="deleteProductConfirm(${product.id})">Delete</button>
@@ -687,19 +713,28 @@ function showToast(message, type = 'info') {
 // ==================== PAGE LOAD FUNCTIONS ====================
 
 // Load products based on current page
-function loadPageProducts() {
-    initializeProducts();
+function renderCurrentPageProducts() {
     const filename = window.location.pathname.split('/').pop();
     const categoryByPage = { 'mens.html': 'men', 'womens.html': 'women', 'kids.html': 'kids' };
     const categoryFilter = document.getElementById('categoryFilter');
     const subCategoryFilter = document.getElementById('subCategoryFilter');
     let category = categoryByPage[filename] || 'all';
     if (filename === 'collection.html' && categoryFilter && categoryFilter.value) category = categoryFilter.value;
-    if (filename === 'collection.html' || category !== 'all') {
+    if (filename === 'collection.html') {
+        const all = getProducts();
+        renderProducts(all.filter(p => p.category === 'men'), 'menProducts');
+        renderProducts(all.filter(p => p.category === 'women'), 'womenProducts');
+        renderProducts(all.filter(p => p.category === 'kids'), 'kidsProducts');
+    } else if (category !== 'all') {
         let products = getProductsByCategory(category);
         if (subCategoryFilter && subCategoryFilter.value && subCategoryFilter.value !== 'all') products = products.filter(product => product.subCategory === subCategoryFilter.value);
-        renderProducts(products, 'productCards', filename === 'collection.html');
+        renderProducts(products, 'productCards');
     }
+}
+
+function loadPageProducts() {
+    initializeProducts();
+    renderCurrentPageProducts();
 }
 
 // Load sub-categories for filter dropdown
@@ -841,8 +876,9 @@ function toggleMenu() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize data
+    // Show cached products immediately, then refresh from Supabase.
     initializeProducts();
+    loadProductsFromSupabase();
     
     // Update UI
     updateCartCount();
@@ -939,4 +975,6 @@ window.submitForm = submitForm;
 window.showCart = showCart;
 window.initializeUsers = initializeUsers;
 window.initializeProducts = initializeProducts;
+window.loadProductsFromSupabase = loadProductsFromSupabase;
+window.formatINR = formatINR;
 window.updateNavigation = updateNavigation;
