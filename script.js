@@ -356,111 +356,81 @@ function updateCartTotal() {
     });
 }
 
-// ==================== USER AUTHENTICATION ====================
-
-// Initialize users in localStorage if not present
+// ==================== SUPABASE AUTHENTICATION ====================
+// Passwords are handled only by Supabase Auth. Never store them in localStorage.
 function initializeUsers() {
-    if (!localStorage.getItem('fashionUsers')) {
-        // Create default admin user
-        const defaultAdmin = {
-            id: 1,
-            username: 'admin',
-            email: 'admin@fashionhub.com',
-            password: 'admin123',
-            role: 'admin',
-            createdAt: new Date().toISOString()
-        };
-        localStorage.setItem('fashionUsers', JSON.stringify([defaultAdmin]));
+    // Kept as a compatibility shim for older pages; no demo users are created.
+    return Promise.resolve();
+}
+
+async function refreshFashionUser() {
+    const client = window.fashionSupabase;
+    if (!client) return null;
+    const { data: { session } } = await client.auth.getSession();
+    if (!session) {
+        localStorage.removeItem('fashionCurrentUser');
+        return null;
     }
-}
-
-// Get all users
-function getUsers() {
-    initializeUsers();
-    return JSON.parse(localStorage.getItem('fashionUsers'));
-}
-
-// Save users to localStorage
-function saveUsers(users) {
-    localStorage.setItem('fashionUsers', JSON.stringify(users));
-}
-
-// Check if email already exists
-function emailExists(email) {
-    const users = getUsers();
-    return users.some(user => user.email.toLowerCase() === email.toLowerCase());
-}
-
-// Sign up new user (default role is 'user')
-function signUp(username, email, password) {
-    if (!username || !email || !password) {
-        return { success: false, message: 'All fields are required!' };
-    }
-    
-    if (emailExists(email)) {
-        return { success: false, message: 'Email already registered!' };
-    }
-    
-    const users = getUsers();
-    const newUser = {
-        id: Date.now(),
-        username: username,
-        email: email.toLowerCase(),
-        password: password,
-        role: 'user',
-        createdAt: new Date().toISOString()
+    const { data: profile } = await client.from('profiles')
+        .select('id, full_name, role')
+        .eq('id', session.user.id)
+        .maybeSingle();
+    const userInfo = {
+        id: session.user.id,
+        username: profile?.full_name || session.user.user_metadata?.full_name || session.user.email,
+        email: session.user.email,
+        role: profile?.role || 'customer'
     };
-    
-    users.push(newUser);
-    saveUsers(users);
-    
-    return { success: true, message: 'Account created successfully!' };
+    localStorage.setItem('fashionCurrentUser', JSON.stringify(userInfo));
+    return userInfo;
 }
 
-// Log in user
-function logIn(email, password) {
-    if (!email || !password) {
-        return { success: false, message: 'Email and password are required!' };
-    }
-    
-    const users = getUsers();
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-    
-    if (user) {
-        const userInfo = {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            role: user.role || 'user'
-        };
-        localStorage.setItem('fashionCurrentUser', JSON.stringify(userInfo));
-        return { success: true, message: 'Login successful!' };
-    }
-    
-    return { success: false, message: 'Invalid email or password!' };
+async function signUp(username, email, password) {
+    if (!window.fashionSupabase) return { success: false, message: 'Supabase is not configured. Please try again later.' };
+    if (!username || !email || !password) return { success: false, message: 'All fields are required!' };
+    const { data, error } = await window.fashionSupabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: { data: { full_name: username.trim() } }
+    });
+    if (error) return { success: false, message: error.message };
+    return {
+        success: true,
+        message: data.session ? 'Account created successfully!' : 'Account created. Please verify your email before logging in.'
+    };
 }
 
-// Log out user
-function logOut() {
+async function logIn(email, password) {
+    if (!window.fashionSupabase) return { success: false, message: 'Supabase is not configured. Please try again later.' };
+    const { error } = await window.fashionSupabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(), password
+    });
+    if (error) return { success: false, message: error.message };
+    await refreshFashionUser();
+    return { success: true, message: 'Login successful!' };
+}
+
+async function logOut() {
+    if (window.fashionSupabase) await window.fashionSupabase.auth.signOut();
     localStorage.removeItem('fashionCurrentUser');
     window.location.href = 'index.html';
 }
 
-// Get current logged in user
 function getCurrentUser() {
-    const user = localStorage.getItem('fashionCurrentUser');
-    return user ? JSON.parse(user) : null;
+    try { return JSON.parse(localStorage.getItem('fashionCurrentUser') || 'null'); }
+    catch (_) { return null; }
 }
+function isLoggedIn() { return !!getCurrentUser(); }
+function isAdmin() { return getCurrentUser()?.role === 'admin'; }
 
-// Check if user is logged in
-function isLoggedIn() {
-    return getCurrentUser() !== null;
-}
-
-// Check if user is admin
-function isAdmin() {
-    const user = getCurrentUser();
-    return user && user.role === 'admin';
+if (window.fashionSupabase) {
+    window.fashionSupabase.auth.onAuthStateChange((_event, session) => {
+        if (!session) localStorage.removeItem('fashionCurrentUser');
+        else setTimeout(() => refreshFashionUser(), 0);
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+        refreshFashionUser().then(() => updateNavigation());
+    });
 }
 
 // ==================== RENDER FUNCTIONS ====================
@@ -873,7 +843,6 @@ function toggleMenu() {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize data
     initializeProducts();
-    initializeUsers();
     
     // Update UI
     updateCartCount();
