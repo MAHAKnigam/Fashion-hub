@@ -39,6 +39,9 @@
       const items = Array.isArray(order.order_items) ? order.order_items : [];
       const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments;
       const next = nextStatus(order.status);
+      const inventoryWarning = order.inventory_issue
+        ? '<p class="admin-inventory-warning"><strong>Inventory review required:</strong> Payment was captured, but stock could not be re-reserved. Check availability before fulfilment.</p>'
+        : '';
       const itemText = items.length
         ? items.map(item => escapeHTML(item.product_name) + ' × ' + Number(item.quantity)).join('<br>')
         : 'No item details';
@@ -58,6 +61,7 @@
             </div>
             <span class="admin-order-status">${escapeHTML(String(order.status).replaceAll('_', ' '))}</span>
           </div>
+          ${inventoryWarning}
           <div class="admin-order-grid">
             <section><h3>Customer & delivery</h3><p>${escapeHTML(customer)}</p><p>${escapeHTML(address.phone || '')}</p><p>${escapeHTML(destination)}</p></section>
             <section><h3>Items</h3><p>${itemText}</p></section>
@@ -116,7 +120,7 @@
 
     const { data: orders, error } = await client
       .from('orders')
-      .select('id,user_id,status,total_paise,created_at,shipping_address,order_items(product_name,quantity),payments(status)')
+      .select('id,user_id,status,total_paise,created_at,shipping_address,inventory_issue,order_items(product_name,quantity),payments(status)')
       .order('created_at', { ascending: false });
     if (error) {
       console.error('Admin orders query failed:', error);
