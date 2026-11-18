@@ -50,7 +50,15 @@ Subscribe to `payment.captured` and `payment.failed`, then copy the webhook secr
 - Configure Supabase Auth email settings and allowed redirect URLs.
 - Configure Razorpay test mode first. Complete successful, failed, cancelled and duplicate-webhook tests before enabling live credentials.
 - Apply the atomic stock-reservation migration before deploying the updated checkout functions. Stock is reserved for 15 minutes, released on payment failure, and committed after a captured payment. Expired reservations are cleaned up whenever a new checkout starts.
-- For automatic cleanup even when no new checkout starts, enable the Supabase `pg_cron` extension and schedule `select public.expire_stock_reservations();` every five minutes.
+- For automatic cleanup even when no new checkout starts, enable the Supabase `pg_cron` extension, then run this once in the SQL Editor:
+  ```sql
+  select cron.schedule(
+    'fashion-hub-expire-stock-reservations',
+    '*/5 * * * *',
+    $select public.expire_stock_reservations();$
+  );
+  ```
+  The function is also called automatically whenever a new checkout begins.
 - Test simultaneous attempts to buy the last unit, payment failure, checkout abandonment/expiry, late payment capture and duplicate/out-of-order webhooks in Razorpay Test Mode.
 - Configure shipping/tax rules, refunds, support handling and operational policies before production.
 
