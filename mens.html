@@ -130,7 +130,15 @@
             var message = input.value.trim();
             if (message) {
                 var d = document.getElementById('chatbotMessages');
-                d.innerHTML += '<div class="chatbot-message user-message"><div class="message-content"><p>' + message + '</p></div></div>';
+                const messageBubble = document.createElement('div');
+    messageBubble.className = 'chatbot-message user-message';
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    const messageText = document.createElement('p');
+    messageText.textContent = message;
+    messageContent.appendChild(messageText);
+    messageBubble.appendChild(messageContent);
+    d.appendChild(messageBubble);
                 input.value = '';
                 setTimeout(function() {
                     var r = '<p>🤔 Ask me about: Men, Women, Kids, Cart, Contact</p>';
