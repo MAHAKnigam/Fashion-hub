@@ -110,10 +110,26 @@ Deno.serve(async (req) => {
     }).select("id").single();
     if (orderError || !order) throw new Error("Could not create order");
 
+    // Reserve stock atomically in PostgreSQL. Concurrent checkouts cannot
+    // reserve the same remaining units, even if both read the old stock value.
+    const { error: reservationError } = await admin.rpc("reserve_order_stock", {
+      p_order_id: order.id,
+      p_items: orderLines.map((line) => ({
+        product_id: line.product_id,
+        quantity: line.quantity,
+      })),
+      p_expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    });
+    if (reservationError) {
+      await admin.from("orders").delete().eq("id", order.id);
+      return json({ error: "Stock changed while you were checking out. Please refresh your cart and try again." }, 409);
+    }
+
     const { error: linesError } = await admin.from("order_items").insert(
       orderLines.map((line) => ({ ...line, order_id: order.id })),
     );
     if (linesError) {
+      await admin.rpc("release_order_stock", { p_order_id: order.id });
       await admin.from("orders").delete().eq("id", order.id);
       throw new Error("Could not save order items");
     }
@@ -133,6 +149,7 @@ Deno.serve(async (req) => {
     });
     const razorpayOrder = await razorpayResponse.json();
     if (!razorpayResponse.ok) {
+      await admin.rpc("release_order_stock", { p_order_id: order.id });
       await admin.from("orders").update({ status: "payment_failed" }).eq("id", order.id);
       throw new Error("Razorpay could not create the payment order");
     }
@@ -142,7 +159,11 @@ Deno.serve(async (req) => {
       gateway_order_id: razorpayOrder.id,
       amount_paise: totalPaise,
     });
-    if (paymentError) throw new Error("Could not save payment record");
+    if (paymentError) {
+      await admin.rpc("release_order_stock", { p_order_id: order.id });
+      await admin.from("orders").update({ status: "payment_failed" }).eq("id", order.id);
+      throw new Error("Could not save payment record");
+    }
 
     return json({
       orderId: order.id,
