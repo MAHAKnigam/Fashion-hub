@@ -1,0 +1,12 @@
+{
+  "lint": {
+    "include": ["supabase/functions"]
+  },
+  "fmt": {
+    "include": ["supabase/functions"]
+  },
+  "tasks": {
+    "lint": "deno lint supabase/functions",
+    "check": "deno check supabase/functions/*/index.ts"
+  }
+}

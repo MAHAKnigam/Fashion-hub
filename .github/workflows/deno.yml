@@ -1,0 +1,39 @@
+name: Supabase Edge Functions
+
+on:
+  push:
+    branches:
+      - feature/supabase-razorpay-backend
+    paths:
+      - "supabase/functions/**"
+      - "deno.json"
+      - ".github/workflows/deno.yml"
+  pull_request:
+    branches:
+      - blackboxai/deploy
+    paths:
+      - "supabase/functions/**"
+      - "deno.json"
+      - ".github/workflows/deno.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  edge-functions:
+    name: Check Supabase Edge Functions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Lint Edge Functions
+        run: deno task lint
+
+      - name: Type-check Edge Functions
+        run: deno task check
