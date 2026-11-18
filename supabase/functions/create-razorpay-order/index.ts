@@ -35,8 +35,15 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const items = body.items;
     const shippingAddress = body.shippingAddress;
-    if (!Array.isArray(items) || items.length === 0 || items.length > 30 || !shippingAddress) {
-      return json({ error: "A valid cart and shipping address are required" }, 400);
+    if (!Array.isArray(items) || items.length === 0 || items.length > 30 ||
+        !shippingAddress || typeof shippingAddress !== "object" ||
+        typeof shippingAddress.recipient_name !== "string" || !shippingAddress.recipient_name.trim() ||
+        typeof shippingAddress.phone !== "string" || !shippingAddress.phone.trim() ||
+        typeof shippingAddress.address_line1 !== "string" || !shippingAddress.address_line1.trim() ||
+        typeof shippingAddress.city !== "string" || !shippingAddress.city.trim() ||
+        typeof shippingAddress.state !== "string" || !shippingAddress.state.trim() ||
+        typeof shippingAddress.postal_code !== "string" || !shippingAddress.postal_code.trim()) {
+      return json({ error: "A valid cart and complete shipping address are required" }, 400);
     }
 
     const quantities = new Map<string, number>();
@@ -63,20 +70,35 @@ Deno.serve(async (req) => {
       if (!product.is_active || product.stock_quantity < quantity) {
         return json({ error: `Insufficient stock for ${product.name}` }, 409);
       }
-      const lineTotal = Number(product.price_paise) * quantity;
-      if (!Number.isSafeInteger(lineTotal)) return json({ error: "Invalid product price" }, 400);
+      const unitPricePaise = Number(product.price_paise);
+      if (!Number.isSafeInteger(unitPricePaise) || unitPricePaise < 0) {
+        return json({ error: "Invalid product price" }, 400);
+      }
+      const lineTotal = unitPricePaise * quantity;
+      if (!Number.isSafeInteger(lineTotal) || !Number.isSafeInteger(subtotalPaise + lineTotal)) {
+        return json({ error: "Order amount exceeds supported limits" }, 400);
+      }
       subtotalPaise += lineTotal;
       orderLines.push({
         product_id: product.id,
         product_name: product.name,
-        unit_price_paise: product.price_paise,
+        unit_price_paise: unitPricePaise,
         quantity,
         line_total_paise: lineTotal,
       });
     }
 
+    // Recompute the subtotal from the exact server-built order lines. Never read
+    // a subtotal, total, unit price, or payment amount from the browser request.
+    const verifiedLineSubtotal = orderLines.reduce(
+      (sum, line) => sum + line.unit_price_paise * line.quantity, 0,
+    );
+    if (!Number.isSafeInteger(verifiedLineSubtotal) || verifiedLineSubtotal !== subtotalPaise) {
+      return json({ error: "Order item subtotal validation failed" }, 400);
+    }
+
     const shippingPaise = 0;
-    const totalPaise = subtotalPaise + shippingPaise;
+    const totalPaise = verifiedLineSubtotal + shippingPaise;
     if (!Number.isSafeInteger(totalPaise) || totalPaise <= 0) return json({ error: "Invalid order total" }, 400);
 
     const { data: order, error: orderError } = await admin.from("orders").insert({
