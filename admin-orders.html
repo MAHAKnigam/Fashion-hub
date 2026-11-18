@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fashion Hub - Manage Orders</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .orders-admin{max-width:1100px;min-height:70vh;margin:0 auto;padding:45px 20px}
+    .orders-admin h1{text-align:center;color:#333;margin-bottom:10px}
+    .orders-admin-intro{text-align:center;color:#777;margin:0 0 28px}
+    .admin-order-card{background:#fff;border-radius:14px;padding:20px;margin:0 0 16px;box-shadow:0 5px 20px rgba(0,0,0,.07)}
+    .admin-order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;border-bottom:1px solid #eee;padding-bottom:13px;margin-bottom:13px}
+    .admin-order-id{font-weight:700;color:#333;overflow-wrap:anywhere}
+    .admin-order-meta,.admin-order-muted{color:#777;font-size:.9rem;margin-top:5px}
+    .admin-order-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+    .admin-order-grid h3{font-size:.95rem;margin:0 0 7px;color:#444}
+    .admin-order-grid p{margin:4px 0;color:#666;line-height:1.5;overflow-wrap:anywhere}
+    .admin-order-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px}
+    .admin-order-actions button{border:0;border-radius:7px;padding:10px 16px;background:var(--primary-color,#ff4d6d);color:#fff;font-weight:600;cursor:pointer}
+    .admin-order-actions button:disabled{opacity:.55;cursor:not-allowed}
+    .admin-order-status{display:inline-block;border-radius:18px;padding:6px 12px;background:#f2f2f2;color:#555;font-size:.84rem;font-weight:700;text-transform:capitalize}
+    .admin-orders-message{text-align:center;background:#fff;padding:24px;border-radius:12px;color:#666}
+    .admin-orders-error{color:#a33}
+    @media(max-width:600px){.orders-admin{padding:30px 14px}.admin-order-card{padding:16px}}
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo">Fashion Hub</div>
+    <div class="menu-toggle" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+    <ul id="navMenu">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="collection.html">Collection</a></li>
+      <li><a href="admin.html">Products</a></li>
+      <li><a href="admin-orders.html" class="active">Manage Orders</a></li>
+      <li><a href="order-history.html">My Orders</a></li>
+      <li><a href="cart.html">🛒 Cart (<span id="cartCount">0</span>)</a></li>
+      <li id="loginLink"><a href="login.html">Login</a></li>
+      <li id="signupLink"><a href="signup.html">Sign Up</a></li>
+      <li id="userLink" style="display:none"><span class="user-greeting"></span></li>
+      <li id="logoutLink" style="display:none"><a href="#" onclick="logOut()">Logout</a></li>
+    </ul>
+  </nav>
+  <main class="orders-admin">
+    <h1>Manage Customer Orders</h1>
+    <p class="orders-admin-intro">Review orders and update their delivery progress.</p>
+    <div id="adminOrdersContainer" aria-live="polite"><div class="admin-orders-message">Loading orders...</div></div>
+  </main>
+  <footer><p>&copy; 2024 Fashion Hub. All Rights Reserved.</p></footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="script.js"></script>
+  <script src="admin-orders.js"></script>
+</body>
+</html>
