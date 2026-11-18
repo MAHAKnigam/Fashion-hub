@@ -92,13 +92,30 @@ Deno.serve(async (req) => {
     }).eq("id", payment.id);
     if (paymentUpdateError) throw new Error("Could not update payment record");
 
+    let inventoryConfirmed = true;
     if (finalStatus === "captured") {
-      // Do not reset processing/shipped/delivered orders to "paid" on a retry.
-      const { error: orderUpdateError } = await admin.from("orders").update({ status: "paid" })
-        .eq("id", order.id).in("status", ["pending_payment", "payment_failed"]);
+      const { data: stockConfirmed, error: stockError } = await admin.rpc(
+        "confirm_order_stock", { p_order_id: order.id },
+      );
+      if (stockError) throw new Error("Payment verified, but inventory confirmation needs review");
+      inventoryConfirmed = stockConfirmed === true;
+
+      // Never reset processing/shipped/delivered orders on a repeated callback.
+      const { error: orderUpdateError } = await admin.from("orders").update({
+        status: "paid",
+        inventory_issue: !inventoryConfirmed,
+      }).eq("id", order.id).in("status", ["pending_payment", "payment_failed"]);
       if (orderUpdateError) throw new Error("Could not update order status");
+      if (!inventoryConfirmed) {
+        await admin.from("orders").update({ inventory_issue: true }).eq("id", order.id);
+      }
     }
-    return json({ verified: true, paymentStatus: finalStatus, orderId: order.id });
+    return json({
+      verified: true,
+      paymentStatus: finalStatus,
+      orderId: order.id,
+      inventoryConfirmed,
+    });
   } catch (error) {
     console.error("verify-razorpay-payment:", error);
     return json({ error: error instanceof Error ? error.message : "Unexpected server error" }, 500);
