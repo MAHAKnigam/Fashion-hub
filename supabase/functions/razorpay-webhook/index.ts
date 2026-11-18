@@ -28,21 +28,35 @@ Deno.serve(async (req) => {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const entity = event.payload?.payment?.entity;
     if (entity?.order_id && entity?.id) {
-      const { data: payment } = await admin.from("payments")
-        .select("id,order_id,amount_paise").eq("gateway_order_id", entity.order_id).single();
-      if (payment && Number(payment.amount_paise) === Number(entity.amount) && entity.currency === "INR") {
-        if (event.event === "payment.captured") {
-          await admin.from("payments").update({
-            gateway_payment_id: entity.id, status: "captured",
-          }).eq("id", payment.id);
-          await admin.from("orders").update({ status: "paid" }).eq("id", payment.order_id);
-        } else if (event.event === "payment.failed") {
-          await admin.from("payments").update({
-            gateway_payment_id: entity.id, status: "failed",
-          }).eq("id", payment.id);
-          await admin.from("orders").update({ status: "payment_failed" })
-            .eq("id", payment.order_id).eq("status", "pending_payment");
-        }
+      const { data: payment, error: paymentLookupError } = await admin.from("payments")
+        .select("id,order_id,amount_paise,status").eq("gateway_order_id", entity.order_id).maybeSingle();
+      if (paymentLookupError) throw paymentLookupError;
+      if (!payment) throw new Error("Payment record not found for Razorpay order");
+      if (Number(payment.amount_paise) !== Number(entity.amount) || entity.currency !== "INR") {
+        return new Response("Payment amount or currency mismatch", { status: 400 });
+      }
+
+      // Webhooks may be retried or delivered out of order. Never let an old
+      // failure overwrite a capture, or let a duplicate capture reset fulfilment.
+      if (event.event === "payment.captured" && payment.status !== "refunded") {
+        const { error: paymentUpdateError } = await admin.from("payments").update({
+          gateway_payment_id: entity.id, status: "captured",
+        }).eq("id", payment.id);
+        if (paymentUpdateError) throw paymentUpdateError;
+
+        const { error: orderUpdateError } = await admin.from("orders").update({ status: "paid" })
+          .eq("id", payment.order_id).in("status", ["pending_payment", "payment_failed"]);
+        if (orderUpdateError) throw orderUpdateError;
+      } else if (event.event === "payment.failed" &&
+          !["captured", "refunded"].includes(payment.status)) {
+        const { error: paymentUpdateError } = await admin.from("payments").update({
+          gateway_payment_id: entity.id, status: "failed",
+        }).eq("id", payment.id).in("status", ["created", "authorized", "failed"]);
+        if (paymentUpdateError) throw paymentUpdateError;
+
+        const { error: orderUpdateError } = await admin.from("orders").update({ status: "payment_failed" })
+          .eq("id", payment.order_id).eq("status", "pending_payment");
+        if (orderUpdateError) throw orderUpdateError;
       }
     }
     return new Response("ok", { status: 200 });
