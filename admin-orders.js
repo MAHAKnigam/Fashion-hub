@@ -38,9 +38,9 @@
       const address = order.shipping_address || {};
       const items = Array.isArray(order.order_items) ? order.order_items : [];
       const payment = Array.isArray(order.payments) ? order.payments[0] : order.payments;
-      const next = nextStatus(order.status);
+      const next = order.inventory_issue ? null : nextStatus(order.status);
       const inventoryWarning = order.inventory_issue
-        ? '<p class="admin-inventory-warning"><strong>Inventory review required:</strong> Payment was captured, but stock could not be re-reserved. Check availability before fulfilment.</p>'
+        ? '<p class="admin-inventory-warning"><strong>Inventory review required:</strong> Payment was captured, but stock could not be re-reserved. Check availability and resolve the issue before fulfilment.</p>'
         : '';
       const itemText = items.length
         ? items.map(item => escapeHTML(item.product_name) + ' × ' + Number(item.quantity)).join('<br>')
@@ -50,7 +50,7 @@
         .filter(Boolean).join(', ');
       const action = next
         ? '<button type="button" data-order-id="' + escapeHTML(order.id) + '" data-next-status="' + next + '">Mark as ' + next.replaceAll('_', ' ') + '</button>'
-        : '<span class="admin-order-muted">No further status action</span>';
+        : '<span class="admin-order-muted">' + (order.inventory_issue ? 'Resolve inventory review before fulfilment' : 'No further status action') + '</span>';
 
       return `
         <article class="admin-order-card">
