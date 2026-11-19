@@ -51,9 +51,12 @@ Deno.serve(async (req) => {
       shipped: "delivered",
     };
     const { data: order, error: orderError } = await admin
-      .from("orders").select("id,status").eq("id", orderId).maybeSingle();
+      .from("orders").select("id,status,inventory_issue").eq("id", orderId).maybeSingle();
     if (orderError || !order) return json({ error: "Order not found" }, 404);
 
+    if (order.inventory_issue) {
+      return json({ error: "Inventory review is required before this order can be fulfilled." }, 409);
+    }
     if (allowedNext[order.status] !== nextStatus) {
       return json({ error: `This order cannot move from ${order.status} to ${nextStatus}.` }, 409);
     }
@@ -69,10 +72,11 @@ Deno.serve(async (req) => {
       .update({ status: nextStatus, updated_at: new Date().toISOString() })
       .eq("id", orderId)
       .eq("status", order.status)
+      .eq("inventory_issue", false)
       .select("id,status,updated_at")
       .maybeSingle();
     if (updateError) throw updateError;
-    if (!updated) return json({ error: "Order status changed elsewhere. Refresh and try again." }, 409);
+    if (!updated) return json({ error: "Order status changed or inventory was flagged elsewhere. Refresh and review the order." }, 409);
 
     return json({ success: true, order: updated });
   } catch (error) {
