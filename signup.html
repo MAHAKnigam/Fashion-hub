@@ -120,6 +120,9 @@
         @media(max-width: 768px) { .chatbot-container { width: calc(100% - 40px); right: 20px; bottom: 100px; } }
     </style>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="supabase-client.js"></script>
     <script src="script.js"></script>
     <script>
         function toggleChatbot() { document.getElementById('chatbot').classList.toggle('active'); }
@@ -129,7 +132,15 @@
             var message = input.value.trim();
             if (message) {
                 var d = document.getElementById('chatbotMessages');
-                d.innerHTML += '<div class="chatbot-message user-message"><div class="message-content"><p>' + message + '</p></div></div>';
+                const messageBubble = document.createElement('div');
+    messageBubble.className = 'chatbot-message user-message';
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    const messageText = document.createElement('p');
+    messageText.textContent = message;
+    messageContent.appendChild(messageText);
+    messageBubble.appendChild(messageContent);
+    d.appendChild(messageBubble);
                 input.value = '';
                 setTimeout(function() {
                     var r = '<p>🤔 Ask me about: Login, Products, Contact</p>';
@@ -147,43 +158,33 @@
             }
         }
         
-        function handleSignup(event) {
+        async function handleSignup(event) {
             event.preventDefault();
-            initializeUsers();
-            var username = document.getElementById('username').value.trim();
-            var email = document.getElementById('email').value.trim().toLowerCase();
-            var password = document.getElementById('password').value;
-            var confirmPassword = document.getElementById('confirmPassword').value;
-            
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
             if (!username || !email || !password) {
                 showToast('All fields are required!', 'error');
                 return false;
             }
-            
+            if (password.length < 8) {
+                showToast('Password must be at least 8 characters!', 'error');
+                return false;
+            }
             if (password !== confirmPassword) {
                 showToast('Passwords do not match!', 'error');
                 return false;
             }
-            
-            var users = JSON.parse(localStorage.getItem('fashionUsers') || '[]');
-            var emailExists = users.some(function(u) { return u.email === email; });
-            
-            if (emailExists) {
-                showToast('Email already registered!', 'error');
-                return false;
+            const result = await signUp(username, email, password);
+            showToast(result.message, result.success ? 'success' : 'error');
+            if (result.success) {
+                setTimeout(() => window.location.href = 'login.html', 1200);
             }
-            
-            var newUser = { id: Date.now(), username: username, email: email, password: password, role: 'user', createdAt: new Date().toISOString() };
-            users.push(newUser);
-            localStorage.setItem('fashionUsers', JSON.stringify(users));
-            
-            showToast('Account created successfully!', 'success');
-            setTimeout(function() { window.location.href = 'login.html'; }, 1000);
             return false;
         }
-        
+
         document.addEventListener('DOMContentLoaded', function() {
-            initializeUsers();
             updateCartCount();
             updateNavigation();
             if (isLoggedIn()) { window.location.href = 'index.html'; }

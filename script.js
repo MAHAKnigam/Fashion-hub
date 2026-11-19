@@ -13,7 +13,7 @@ const SUB_CATEGORIES = {
 // Main categories
 const MAIN_CATEGORIES = ['men', 'women', 'kids'];
 
-// Initialize products in localStorage with sample data
+// Initialize a local fallback catalogue. Supabase replaces this cache when available.
 function initializeProducts() {
     const defaultProducts = [
         // ==================== MEN'S COLLECTION ====================
@@ -134,6 +134,46 @@ function initializeProducts() {
     }
 }
 
+// Convert database rows to the existing frontend product shape.
+function mapSupabaseProduct(row) {
+    return { id: Number(row.legacy_id), dbId: row.id, name: row.name, description: row.description || '', price: Number(row.price_paise) / 100, image: row.image_url || '', category: row.category, subCategory: row.sub_category || 'Other', stockQuantity: Number(row.stock_quantity || 0) };
+}
+
+async function loadProductsFromSupabase() {
+    const client = window.fashionSupabase;
+    if (!client) return false;
+    const { data, error } = await client.from('products').select('id, legacy_id, name, description, price_paise, image_url, category, sub_category, stock_quantity').eq('is_active', true).order('legacy_id', { ascending: true });
+    if (error) {
+        console.error('Could not load products from Supabase:', error.message);
+        showToast('Could not refresh products. Showing saved catalogue.', 'error');
+        return false;
+    }
+    const products = (data || []).map(mapSupabaseProduct).filter(product => Number.isFinite(product.id));
+    localStorage.setItem('fashionProducts', JSON.stringify(products));
+
+    // Refresh saved cart metadata and attach database UUIDs to older cart entries.
+    const productByLegacyId = new Map(products.map(product => [product.id, product]));
+    const refreshedCart = getCart().map(item => {
+        const currentProduct = productByLegacyId.get(item.id);
+        return currentProduct ? {
+            ...item,
+            dbId: currentProduct.dbId,
+            name: currentProduct.name,
+            price: currentProduct.price,
+            image: currentProduct.image
+        } : item;
+    });
+    saveCart(refreshedCart);
+    updateCartCount();
+    renderCurrentPageProducts();
+    if (document.getElementById('cartItems')) renderCartItems();
+    return true;
+}
+
+function formatINR(amount) {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(Number(amount) || 0);
+}
+
 // ==================== CRUD OPERATIONS ====================
 
 // CREATE - Add a new product
@@ -210,8 +250,14 @@ function deleteProduct(id) {
 
 // Get cart from localStorage
 function getCart() {
-    const cart = localStorage.getItem('fashionCart');
-    return cart ? JSON.parse(cart) : [];
+    try {
+        const storedCart = JSON.parse(localStorage.getItem('fashionCart') || '[]');
+        if (!Array.isArray(storedCart)) return [];
+        return storedCart.filter(item => item && Number.isFinite(Number(item.id)) && Number.isFinite(Number(item.price)) && Number(item.price) >= 0 && Number.isInteger(Number(item.quantity)) && Number(item.quantity) > 0).map(item => ({ ...item, id: Number(item.id), price: Number(item.price), quantity: Number(item.quantity) }));
+    } catch (error) {
+        console.error('Could not read the saved cart:', error);
+        return [];
+    }
 }
 
 // Save cart to localStorage
@@ -233,7 +279,7 @@ function addToCart(productIdOrName) {
         product = getProductById(productIdOrName);
     } else {
         const products = getProducts();
-        product = products.find(p => p.name === productIdOrName);
+        product = products.find(p => p.name === productIdOrName || p.id === Number(productIdOrName));
     }
     
     if (product) {
@@ -242,12 +288,14 @@ function addToCart(productIdOrName) {
         
         if (existingItem) {
             existingItem.quantity += 1;
+            if (product.dbId) existingItem.dbId = product.dbId;
         } else {
             cart.push({
                 id: product.id,
                 name: product.name,
                 price: product.price,
                 image: product.image,
+                dbId: product.dbId || null,
                 quantity: 1
             });
         }
@@ -269,20 +317,16 @@ function removeFromCart(productId) {
 
 // Update item quantity
 function updateQuantity(productId, change) {
-    const cart = getCart();
-    const item = cart.find(item => item.id === productId);
-    
-    if (item) {
-        item.quantity += change;
-        
-        if (item.quantity <= 0) {
-            cart = cart.filter(i => i.id !== productId);
-        }
-        
-        saveCart(cart);
-        updateCartCount();
-        renderCartItems();
-    }
+    let cart = getCart();
+    const id = Number(productId);
+    const amount = Number(change);
+    const item = cart.find(cartItem => cartItem.id === id);
+    if (!item || !Number.isInteger(amount) || amount === 0) return;
+    item.quantity += amount;
+    if (item.quantity <= 0) cart = cart.filter(cartItem => cartItem.id !== id);
+    saveCart(cart);
+    updateCartCount();
+    renderCartItems();
 }
 
 // Calculate cart total
@@ -328,7 +372,7 @@ function renderCartItems() {
             <img src="${item.image}" alt="${item.name}" class="cart-item-image">
             <div class="cart-item-details">
                 <h3>${item.name}</h3>
-                <p class="cart-item-price">$${item.price.toFixed(2)}</p>
+                <p class="cart-item-price">${formatINR(item.price)}</p>
             </div>
             <div class="cart-item-quantity">
                 <button onclick="updateQuantity(${item.id}, -1)">-</button>
@@ -336,7 +380,7 @@ function renderCartItems() {
                 <button onclick="updateQuantity(${item.id}, 1)">+</button>
             </div>
             <div class="cart-item-total">
-                $${(item.price * item.quantity).toFixed(2)}
+                ${formatINR(item.price * item.quantity)}
             </div>
             <button class="remove-btn" onclick="removeFromCart(${item.id})">Remove</button>
         </div>
@@ -350,115 +394,85 @@ function updateCartTotal() {
     const totalElements = document.querySelectorAll('#cartTotal');
     const total = getCartTotal();
     totalElements.forEach(el => {
-        el.textContent = total.toFixed(2);
+        el.textContent = formatINR(total);
     });
 }
 
-// ==================== USER AUTHENTICATION ====================
-
-// Initialize users in localStorage if not present
+// ==================== SUPABASE AUTHENTICATION ====================
+// Passwords are handled only by Supabase Auth. Never store them in localStorage.
 function initializeUsers() {
-    if (!localStorage.getItem('fashionUsers')) {
-        // Create default admin user
-        const defaultAdmin = {
-            id: 1,
-            username: 'admin',
-            email: 'admin@fashionhub.com',
-            password: 'admin123',
-            role: 'admin',
-            createdAt: new Date().toISOString()
-        };
-        localStorage.setItem('fashionUsers', JSON.stringify([defaultAdmin]));
+    // Kept as a compatibility shim for older pages; no demo users are created.
+    return Promise.resolve();
+}
+
+async function refreshFashionUser() {
+    const client = window.fashionSupabase;
+    if (!client) return null;
+    const { data: { session } } = await client.auth.getSession();
+    if (!session) {
+        localStorage.removeItem('fashionCurrentUser');
+        return null;
     }
-}
-
-// Get all users
-function getUsers() {
-    initializeUsers();
-    return JSON.parse(localStorage.getItem('fashionUsers'));
-}
-
-// Save users to localStorage
-function saveUsers(users) {
-    localStorage.setItem('fashionUsers', JSON.stringify(users));
-}
-
-// Check if email already exists
-function emailExists(email) {
-    const users = getUsers();
-    return users.some(user => user.email.toLowerCase() === email.toLowerCase());
-}
-
-// Sign up new user (default role is 'user')
-function signUp(username, email, password) {
-    if (!username || !email || !password) {
-        return { success: false, message: 'All fields are required!' };
-    }
-    
-    if (emailExists(email)) {
-        return { success: false, message: 'Email already registered!' };
-    }
-    
-    const users = getUsers();
-    const newUser = {
-        id: Date.now(),
-        username: username,
-        email: email.toLowerCase(),
-        password: password,
-        role: 'user',
-        createdAt: new Date().toISOString()
+    const { data: profile } = await client.from('profiles')
+        .select('id, full_name, role')
+        .eq('id', session.user.id)
+        .maybeSingle();
+    const userInfo = {
+        id: session.user.id,
+        username: profile?.full_name || session.user.user_metadata?.full_name || session.user.email,
+        email: session.user.email,
+        role: profile?.role || 'customer'
     };
-    
-    users.push(newUser);
-    saveUsers(users);
-    
-    return { success: true, message: 'Account created successfully!' };
+    localStorage.setItem('fashionCurrentUser', JSON.stringify(userInfo));
+    return userInfo;
 }
 
-// Log in user
-function logIn(email, password) {
-    if (!email || !password) {
-        return { success: false, message: 'Email and password are required!' };
-    }
-    
-    const users = getUsers();
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-    
-    if (user) {
-        const userInfo = {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            role: user.role || 'user'
-        };
-        localStorage.setItem('fashionCurrentUser', JSON.stringify(userInfo));
-        return { success: true, message: 'Login successful!' };
-    }
-    
-    return { success: false, message: 'Invalid email or password!' };
+async function signUp(username, email, password) {
+    if (!window.fashionSupabase) return { success: false, message: 'Supabase is not configured. Please try again later.' };
+    if (!username || !email || !password) return { success: false, message: 'All fields are required!' };
+    const { data, error } = await window.fashionSupabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: { data: { full_name: username.trim() } }
+    });
+    if (error) return { success: false, message: error.message };
+    return {
+        success: true,
+        message: data.session ? 'Account created successfully!' : 'Account created. Please verify your email before logging in.'
+    };
 }
 
-// Log out user
-function logOut() {
+async function logIn(email, password) {
+    if (!window.fashionSupabase) return { success: false, message: 'Supabase is not configured. Please try again later.' };
+    const { error } = await window.fashionSupabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(), password
+    });
+    if (error) return { success: false, message: error.message };
+    await refreshFashionUser();
+    return { success: true, message: 'Login successful!' };
+}
+
+async function logOut() {
+    if (window.fashionSupabase) await window.fashionSupabase.auth.signOut();
     localStorage.removeItem('fashionCurrentUser');
     window.location.href = 'index.html';
 }
 
-// Get current logged in user
 function getCurrentUser() {
-    const user = localStorage.getItem('fashionCurrentUser');
-    return user ? JSON.parse(user) : null;
+    try { return JSON.parse(localStorage.getItem('fashionCurrentUser') || 'null'); }
+    catch (_) { return null; }
 }
+function isLoggedIn() { return !!getCurrentUser(); }
+function isAdmin() { return getCurrentUser()?.role === 'admin'; }
 
-// Check if user is logged in
-function isLoggedIn() {
-    return getCurrentUser() !== null;
-}
-
-// Check if user is admin
-function isAdmin() {
-    const user = getCurrentUser();
-    return user && user.role === 'admin';
+if (window.fashionSupabase) {
+    window.fashionSupabase.auth.onAuthStateChange((_event, session) => {
+        if (!session) localStorage.removeItem('fashionCurrentUser');
+        else setTimeout(() => refreshFashionUser(), 0);
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+        refreshFashionUser().then(() => updateNavigation());
+    });
 }
 
 // ==================== RENDER FUNCTIONS ====================
@@ -490,8 +504,8 @@ function renderProducts(products, containerId, showCategory = false) {
             <div class="card-content">
                 <h3>${product.name}</h3>
                 <p>${product.description}</p>
-                <p class="price">$${parseFloat(product.price).toFixed(2)}</p>
-                <button onclick="addToCart('${product.name}')">Add to Cart</button>
+                <p class="price">${formatINR(product.price)}</p>
+                <button onclick="addToCart(${Number(product.id)})">Add to Cart</button>
             </div>
         `;
         container.appendChild(card);
@@ -545,7 +559,7 @@ function renderAdminProductsTable(container, products) {
                 <td>${product.name}</td>
                 <td>${product.category}</td>
                 <td>${product.subCategory || 'N/A'}</td>
-                <td>$${parseFloat(product.price).toFixed(2)}</td>
+                <td>${formatINR(product.price)}</td>
                 <td>
                     <button class="edit-btn" onclick="editProductForm(${product.id})">Edit</button>
                     <button class="delete-btn" onclick="deleteProductConfirm(${product.id})">Delete</button>
@@ -715,29 +729,28 @@ function showToast(message, type = 'info') {
 // ==================== PAGE LOAD FUNCTIONS ====================
 
 // Load products based on current page
-function loadPageProducts() {
-    initializeProducts(); // Ensure products are initialized
-
-    const path = window.location.pathname;
-    const filename = path.split('/').pop();
-    
-    // Collection page - show all products
+function renderCurrentPageProducts() {
+    const filename = window.location.pathname.split('/').pop();
+    const categoryByPage = { 'mens.html': 'men', 'womens.html': 'women', 'kids.html': 'kids' };
+    const categoryFilter = document.getElementById('categoryFilter');
+    const subCategoryFilter = document.getElementById('subCategoryFilter');
+    let category = categoryByPage[filename] || 'all';
+    if (filename === 'collection.html' && categoryFilter && categoryFilter.value) category = categoryFilter.value;
     if (filename === 'collection.html') {
-        const products = getProducts();
-        renderProducts(products, 'productCards', true);
-    }
-    
-    // Men's page - show men's products
-    if (filename === 'mens.html') {
-        const products = getProductsByCategory('men');
+        const all = getProducts();
+        renderProducts(all.filter(p => p.category === 'men'), 'menProducts');
+        renderProducts(all.filter(p => p.category === 'women'), 'womenProducts');
+        renderProducts(all.filter(p => p.category === 'kids'), 'kidsProducts');
+    } else if (category !== 'all') {
+        let products = getProductsByCategory(category);
+        if (subCategoryFilter && subCategoryFilter.value && subCategoryFilter.value !== 'all') products = products.filter(product => product.subCategory === subCategoryFilter.value);
         renderProducts(products, 'productCards');
     }
-    
-    // Women's page - show women's products
-    if (filename === 'womens.html') {
-        const products = getProductsByCategory('women');
-        renderProducts(products, 'productCards');
-    }
+}
+
+function loadPageProducts() {
+    initializeProducts();
+    renderCurrentPageProducts();
 }
 
 // Load sub-categories for filter dropdown
@@ -787,7 +800,7 @@ function proceedToCheckout() {
         userId: user.id,
         items: cart,
         total: getCartTotal(),
-        status: 'pending',
+        status: 'demo - payment not processed',
         createdAt: new Date().toISOString()
     };
     
@@ -795,7 +808,7 @@ function proceedToCheckout() {
     orders.push(order);
     localStorage.setItem('fashionOrders', JSON.stringify(orders));
     
-    showToast('Order placed successfully! Thank you for shopping!', 'success');
+    showToast('Demo order saved on this device. No payment was processed.', 'info');
     
     // Clear cart
     saveCart([]);
@@ -879,9 +892,9 @@ function toggleMenu() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize data
+    // Show cached products immediately, then refresh from Supabase.
     initializeProducts();
-    initializeUsers();
+    loadProductsFromSupabase();
     
     // Update UI
     updateCartCount();
@@ -978,4 +991,6 @@ window.submitForm = submitForm;
 window.showCart = showCart;
 window.initializeUsers = initializeUsers;
 window.initializeProducts = initializeProducts;
+window.loadProductsFromSupabase = loadProductsFromSupabase;
+window.formatINR = formatINR;
 window.updateNavigation = updateNavigation;

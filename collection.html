@@ -222,6 +222,9 @@
         }
     </style>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="supabase-client.js"></script>
     <script src="script.js"></script>
     <script>
         // Chatbot functionality
@@ -247,7 +250,15 @@
         
         function addUserMessage(message) {
             const d = document.getElementById('chatbotMessages');
-            d.innerHTML += '<div class="chatbot-message user-message"><div class="message-content"><p>' + message + '</p></div></div>';
+            const messageBubble = document.createElement('div');
+    messageBubble.className = 'chatbot-message user-message';
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    const messageText = document.createElement('p');
+    messageText.textContent = message;
+    messageContent.appendChild(messageText);
+    messageBubble.appendChild(messageContent);
+    d.appendChild(messageBubble);
             d.scrollTop = d.scrollHeight;
         }
         
