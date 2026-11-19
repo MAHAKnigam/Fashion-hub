@@ -4,19 +4,9 @@ on:
   push:
     branches:
       - blackboxai/deploy
-    paths:
-      - "*.js"
-      - "supabase/functions/**"
-      - "deno.json"
-      - ".github/workflows/deno.yml"
   pull_request:
     branches:
       - blackboxai/deploy
-    paths:
-      - "*.js"
-      - "supabase/functions/**"
-      - "deno.json"
-      - ".github/workflows/deno.yml"
 
 permissions:
   contents: read
