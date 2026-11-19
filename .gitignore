@@ -25,9 +25,6 @@ npm-debug.log*
 dist/
 build/
 
-# Local frontend configuration
-config.js
-
 # Supabase local state
 .supabase/
 supabase/.temp/
