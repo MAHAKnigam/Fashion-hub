@@ -8,13 +8,20 @@ Create a project at https://supabase.com/dashboard. In Project Settings / API, c
 
 ## 2. Apply the database migrations
 
-In Supabase Dashboard → SQL Editor, apply these files in order:
+For a **new Supabase project**, use Supabase Dashboard → SQL Editor and apply every migration below in order:
 
 1. `supabase/migrations/202611180001_initial_schema.sql`
 2. `supabase/migrations/202611180002_checkout_indexes.sql`
-3. `supabase/migrations/202611190001_atomic_stock_reservations.sql`
+3. `supabase/migrations/202611180003_seed_categories.sql`
+4. `supabase/migrations/202611180004_seed_products_inr.sql`
+5. `supabase/migrations/202611180005_fix_kids_product_images.sql`
+6. `supabase/migrations/202611180005_fix_product_image_urls.sql`
+7. `supabase/migrations/202611180005_fix_product_images.sql`
+8. `supabase/migrations/202611190001_atomic_stock_reservations.sql`
 
-The migrations create the commerce schema, indexes, Row Level Security policies and atomic stock-reservation functions. Order, payment and stock-reservation writes are intentionally restricted to trusted Edge Functions. Do not deploy the updated checkout functions before applying all three migrations.
+The migrations create the commerce schema, starter categories and catalogue, indexes, Row Level Security policies, image corrections and atomic stock-reservation functions. Order, payment and stock-reservation writes are intentionally restricted to trusted Edge Functions.
+
+**For an existing project that has already applied the first seven migrations, apply only the new `202611190001_atomic_stock_reservations.sql` migration.** Do not rerun older migrations on an existing database. Do not deploy the updated checkout functions until the stock-reservation migration has been applied.
 
 ## 3. Add frontend configuration
 
@@ -45,17 +52,17 @@ Subscribe to `payment.captured` and `payment.failed`, then copy the webhook secr
 
 ## 5. Important setup tasks before launch
 
-- Import the existing product catalogue into `public.products`; convert each displayed rupee amount to paise (₹499.00 → 49900).
+- The starter catalogue is inserted by the seed migrations. If you replace it with your own catalogue, import products into `public.products` and convert each displayed rupee amount to paise (₹499.00 → 49900).
 - Create the first admin profile manually in the SQL Editor only after signing up that account. Never grant admin based on browser storage or user-submitted metadata.
 - Configure Supabase Auth email settings and allowed redirect URLs.
 - Configure Razorpay test mode first. Complete successful, failed, cancelled and duplicate-webhook tests before enabling live credentials.
-- Apply the atomic stock-reservation migration before deploying the updated checkout functions. Stock is reserved for 15 minutes, released on payment failure, and committed after a captured payment. Expired reservations are cleaned up whenever a new checkout starts.
+- Stock is reserved for 15 minutes, released on payment failure, and committed after a captured payment. Expired reservations are cleaned up whenever a new checkout starts.
 - For automatic cleanup even when no new checkout starts, enable the Supabase `pg_cron` extension, then run this once in the SQL Editor:
   ```sql
   select cron.schedule(
     'fashion-hub-expire-stock-reservations',
     '*/5 * * * *',
-    $select public.expire_stock_reservations();$
+    $$select public.expire_stock_reservations();$$
   );
   ```
   The function is also called automatically whenever a new checkout begins.
